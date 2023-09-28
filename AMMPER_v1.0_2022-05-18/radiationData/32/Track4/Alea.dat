@@ -1,0 +1,37 @@
+1590737	 Random number
+1	 Radiation type (ELECTRON=0, ION=1, PHOTON=2)
+0	 Ion index
+1	 Number of histories for this simulation
+32	 Energy of particles
+1	 Energy of ion constant (NO=0, YES=1)
+0	 Surface (SQUARE=0, CIRCLE=1)
+1	 Number of ions impinging surface
+0	 Surface radius or side length
+100	 Track length
+0	 Boundary options (Infinite=0, Clip=1, PBC=2)
+2	 Do the 3D voxel dosimetry (NO=0, YES=1, CODED=2)
+200	 Dose voxel size (angstroms)
+1	 Write radiolytic species (track) (NO=0, ASCII=1, BINARY=2)
+1	 Write events (NO=0, YES=1)
+0	 Do the target dosimetry (NO=0, CYLINDER=1, SPHERE=2)
+1	 Target inner density (g/cm^3)
+0	 Walled target (NO=0, YES=1)
+200	 Target wall thickness (Angstrom)
+20	 Target wall density (g/cm^3)
+10	 Number of targets
+1500	 Target height (Angstrom)
+750	 Target radius (Angstrom)
+0	 Target position (FIXED=0, RANDOM=1)
+1	 Target orientation (FIXED=0, RANDOM=1)
+0	 Target fixed theta (degrees)
+0	 Target fixed phi (degrees)
+850	 Target X fixed position (Angstrom)
+0	 Target Y Offset (Angstrom)
+-0	 Target min X position (Angstrom)
+0	 Target max X position (Angstrom)
+0	 Target min Y position (Angstrom)
+1e+06	 Target max Y position (Angstrom)
+-0	 Target min Z position (Angstrom)
+0	 Target max Z position (Angstrom)
+4	 Task number
+"C:\Users\asingh21\OneDrive - NASA\Documents\RITRACKS Simulations\Default" 	 Redirected directory
