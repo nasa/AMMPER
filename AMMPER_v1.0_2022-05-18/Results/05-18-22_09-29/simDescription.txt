@@ -1,4 +1,0 @@
-Cell Type: rad51
-Rad Type: 150 MeV Proton
-Sim Dim: 64microns
-NumGen: 5
