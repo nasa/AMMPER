@@ -1,0 +1,326 @@
+\documentclass{asmarticle}
+
+%%%%\GeneralInstruction%%%%
+
+% The stock ASM \afn typesets author marks in math mode (${}^{\mathrm{#1}}$),
+% which mangles symbol flags such as \dagger. Render them in text mode instead
+% so that \dag (equal-contribution flag) renders as a clean text dagger.
+\renewcommand{\afn}[1]{\textsuperscript{#1}}
+
+\title{AMMPER-2: A spatially explicit agent-based model of microbial radiobiology with redox dye simulation}
+
+\author{Daniel Palacios\afn{1,2,3,\dag}, Pramesh Sharma\afn{4,\dag}, Madeline Marou\v{s}\afn{5}, Lauren C.~Liddell\afn{6},
+Diana M. Gentry\afn{6}, Sergio R. Santa Maria\afn{6}, Jessica Lee\afn{6*}}
+
+\affil{Quantitative and Computational Biosciences, Baylor College of Medicine, Houston, Texas 77030, USA}
+\affil{Department of Pediatrics, Baylor College of Medicine, Houston, Texas 77030, USA}
+\affil{Jan and Dan Duncan Neurological Research Institute, Texas Children's Hospital, Houston, Texas 77030, USA}
+\affil{Department of Computer Science, University of California Davis, Davis, CA, USA}
+\affil{Department of Information Sciences and Technology, Penn State Berks, Reading, PA, USA}
+
+\affil{Space Biosciences Research Branch, NASA Ames Research Center, Mountain View, CA, USA}
+
+\corraddress{Address correspondence to Jessica Lee, jessica.a.lee@nasa.gov \\ \textsuperscript{\dag}These two authors contributed equally to this work.}
+
+
+
+% D.P. contributed to the majority of the work, writing, and figures. M.M. contributed to the development of the graphical user interface (GUI) of AMMPER. P.S. made significant contributions to overall enhancements of the AMMPER code, compiled the figures into panels, and provided revisions to the manuscript. L.C.L., D.M.G., and S.R.S.M. are part of the BioSentinel team, who originally conducted the experiments that were modeled in this study. Their data were used, and their space biology expertise was integral to the project. J.L. is the senior author. Author order was determined by D.P. and the senior author, with concurrence by all other authors.
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}%
+
+To reduce health risks for human exploration of space, it is important to study and model the effects of deep-space radiation on biological systems. The budding yeast \textit{Saccharomyces cerevisiae} is commonly used as a model organism in space radiobiology; however, little is understood about how radiation damage at the level of the individual cell translates into the population-level effects measured in experiments. The Agent-Based Model for Microbial Populations Exposed to Radiation (AMMPER) is a spatially explicit agent-based model that simulates the effects of ionizing radiation on \textit{S. cerevisiae} cells and produces population-level results, with the goal of improving experiment design and data interpretation \cite{singh2023agent}. While AMMPER-1 was successful in qualitatively reproducing the effects of radiation on growth rate, it had several limitations. Here, we present AMMPER-2, which addresses these limitations. This improved program incorporates the dynamics of the redox dye alamarBlue, an important data type commonly generated in spaceflight microbiology experiments, and allows for more complex modeling of the fate of reactive oxygen species. It also includes an improved graphical interface for easier use and features faster performance due to efficiency improvements. AMMPER-2 continues to be easy to execute using Python on a standard personal laptop, with the goal of providing a tool for space biologists to explore experimental conditions, generate hypotheses, and interpret data related to microbial space radiation experiments.
+
+\begin{importance}%
+Understanding how deep-space radiation affects living systems is essential for enabling safe long-duration human space exploration, yet the link between radiation damage at the level of the individual cell and the population-level growth and metabolic signals measured in spaceflight experiments remains poorly understood. Computational tools that connect these scales can improve experiment design and data interpretation. This manuscript describes an update to a previously published computational modeling tool \cite{singh2023agent}. The intended users of AMMPER are scientists, educators, and students interested in the biological effects of radiation on organisms, and the tool is designed to prioritize ease of use and accessibility over complexity and precision. This model is a work in progress, and the manuscript focuses on new features and lessons learned rather than scientific findings.
+\end{importance}
+\end{abstract}
+
+\section{INTRODUCTION}
+
+\subsection{Microbial experiments in deep space}
+Microorganisms feature prominently in experimental space biology \cite{horneck2010space, nickerson2022vision, bijlani2021advances}. Their small size, rapid generation time, genetic manipulability and tolerance of stasis make them convenient models for the response to spaceflight stressors such as radiation and altered gravity; microbiomes are an unavoidable part of the habitable environments occupied by astronauts, so studying microbial behavior in space is necessary for establishing healthy habitats \cite{kumar2022metabolic, martin2017integrated, siddiqui2023microbiome}; and microorganisms will carry out essential functions in long-distance travel, including bioregenerative life support, food production, biomining, and biosynthesis of products such as pharmaceuticals \cite{dance2025microbes, santomartino2023toward, berliner2021towards, gumulya2022situ, mcnulty2021molecular}, necessitating empirical testing of those functions in space.
+
+A platform particularly well suited to microorganisms is the CubeSat, a small modular satellite: relative to experiments conducted by crew in habitats such as the International Space Station, launch opportunities are more frequent and no crew time is required. Examples include GeneSat-1, PharmaSat, O/OREOS, SporeSat and BioSentinel \cite{santa2023microbial,massaro2023biosentinel}. Because these experiments are automated, self-contained, small in volume and often require no sample return, they form the basis for the first experiments on the distinctive radiation environment beyond Low Earth Orbit (LEO), where opportunities for crew-based experimentation are extremely limited. BioSentinel was launched as a secondary payload on \textit{Artemis I} into a trailing heliocentric orbit and is, at the time of writing, more than 77 million km from Earth and receding. LEIA (the Lunar Explorer Instrument for space biology Applications) is being developed with very similar instrumentation for delivery to the lunar surface by an uncrewed lander, NET 2027 \cite{lambacher2025leia, NASA_2023}.
+
+Both missions use the BioSensor, a microfluidic culturing device accommodating at least 256 samples of ${\sim}100$~$\mu$L. Yeast cells are stored desiccated in individual wells of fluidic cards, in stasis for launch and transit; the experiment is initiated by pumping culture medium into the wells, after which growth and metabolism are monitored by optical absorbance at three wavelengths per well at frequent timepoints. BioSentinel and half of the LEIA samples, like several prior spaceflight experiments, include the redox-sensitive dye resazurin (trade name alamarBlue) in the medium; measurements at 570 nm and 630 nm track the dye's color change from blue to pink to colorless as it is reduced by electron carriers produced through cellular metabolism \cite{rampersad2012multiple}, and optical density is read at 850 nm to avoid interference. The automated, data-rich nature of these missions --- and the difficulty of interpreting how cellular radiation damage gives rise to the population-level metabolic and growth signals they measure --- motivates the development of computational tools such as AMMPER.
+
+\subsection{The space environment: deep space ionizing radiation}
+Of the many challenges the space environment imposes on biological systems, ionizing radiation is of particular concern, because its effects are universal across the tree of life and effective mitigation strategies are lacking \cite{afshinnekoo2020fundamental,bijlani2021advances}. The environment beyond LEO --- on the Moon, on Mars, and in transit to those destinations --- is distinct from, and poses greater health risks than, the LEO environment in which most space biology experimentation has been conducted to date. Its characteristic component is Galactic Cosmic Radiation (GCR), formed outside the solar system by extreme events such as supernovae and by stellar winds, arriving from all directions and composed principally of protons, followed by $\alpha$ particles, with $1\%$ heavier nuclei \cite{NASA_2023}. GCR causes direct DNA damage including double- and single-strand breaks \cite{NASA}, and acts indirectly by interacting with the water in cell culture medium to create free radicals or Reactive Oxygen Species (ROS) such as $OH$ and $H_2O_2$, which impose oxidative stress and at high concentrations induce apoptosis \cite{borrego2015ionizing, schultzhaus2021transcriptomic, farrugia2012oxidative}.
+
+\subsection{AMMPER-1}
+The Agent-Based Model for Microbial Populations Exposed to Radiation (AMMPER) was developed to help researchers and educators understand the biological effects of ionizing radiation in microbial cells \cite{singh2023agent}. Written in Python, it treats \textit{S. cerevisiae} cells as individual agents and combines DNA damage, a DNA repair probability model, Brownian motion, cell replication, ROS modeling and three radiation environment models (Deep Space Proton, NSRL GCRSim Proton, and 150 MeV Proton) to predict cell health outcomes and population-level dynamics, including growth curves and growth rates. Spatially dependent energy deposition events are generated with the Relativistic Ion Tracks (RITRACKS) model \cite{plante2008ionization, plante2014ritracks}; these liberate ROS molecules and damage nearby cells both directly and indirectly (Fig. \ref{fig:panel1}A). Exposure occurs either at a specified generation (the 150 MeV proton and GCRSim scenarios) or chronically at every generation (Deep Space Proton). AMMPER models the two cell types flown on BioSentinel: a wild type \textit{S. cerevisiae} strain and a \textit{rad51} deletion mutant (\textit{rad51}$\Delta$), which is defective for recombinational repair of DNA double-strand breaks and therefore more sensitive to ionizing radiation (Table \ref{tab:strains}) \cite{massaro2023biosentinel}. The position and health state of every cell is stored at each timepoint, which is what allows growth curves and growth rates to be recovered.
+
+\begin{table}[ht]
+\centering
+\caption{The two \textit{S. cerevisiae} strains modeled in AMMPER.}
+\label{tab:strains}
+\begin{tabular}{lll}
+\hline
+Strain & Relevant genotype & Radiation-relevant phenotype \\
+\hline
+Wild type & \textit{RAD51} intact & Functional homologous recombination; \\
+ & & baseline sensitivity to ionizing radiation \\
+\textit{rad51}$\Delta$ & \textit{rad51} deletion & Defective recombinational repair of double-strand \\
+ & & breaks; increased sensitivity to ionizing radiation \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{AMMPER-2}
+Here we describe four improvements we have recently made to AMMPER. First, we added a model of alamarBlue (aB) dye dynamics using Michaelis-Menten kinetics; by simulating a redox-sensitive dye widely used in spaceflight experiments to study the effects of radiation on cell metabolism, it makes AMMPER's predictions testable against metabolic as well as growth measurements. Second, we built a more accurate simulation of ROS dynamics: AMMPER-1 treats ROS molecules as static and persistent, which is fast but misses their diffusion and decay, so we added models for both and left the user free to switch between them. Third, we integrated a Graphical User Interface (GUI) to accommodate users across a broad spectrum of proficiency levels. Fourth, we made coding modifications to improve running time. We also added a gamma radiation mode, described in the Results.
+
+\subsection{Cell metabolism and alamarBlue (aB)}
+AMMPER's development was inspired by the BioSentinel and LEIA missions \cite{lera2021biosensor, ricco2020biosentinel, santa2020biosentinel}, which like several prior automated biological missions use the metabolic dye alamarBlue (aB) as a cell health indicator \cite{rampersad2012multiple, o2000investigation}. Metabolically active cells generate electron carriers that irreversibly reduce the blue form of aB (resazurin) to a pink form (resorufin), which is further reduced by a reversible reaction to a colorless form (dihydroresorufin) \cite{ring2012metabolism, lu2019consensus, saitua2017dynamic, zhao2016reconstruction, pornputtapong2015human}. These reactions are illustrated in Figure \ref{fig:abpanel}A.
+
+In these experiments cells are cultured in a microfluidic card equipped with arrays of light-emitting diodes and photodiode detectors, which measure absorbance at several wavelengths: growth is tracked by optical density at 850 nm, and metabolism by the abundance of the blue and pink forms of aB, read at 570 nm and 630 nm. AMMPER-1 simulated the growth curve alone; for AMMPER-2 we sought to simulate aB dynamics, in order to use the additional 570 and 630 nm data and to let the model predict the relationship between radiation exposure and metabolic activity on a metric directly comparable with experiment. Converting those absorbances into the concentration of each aB species requires a normalization that accounts for the overlap between the two species' spectra and for the difference between the flight LED wavelengths and the absorbance maxima at which our fitting data were taken; Supplementary Text S4 gives the expressions.
+
+
+\section{RESULTS}
+
+\subsection{AMMPER generates alamarBlue reduction curves using a naive Michaelis-Menten bulk model}
+
+We used Michaelis-Menten kinetics to construct an alamarBlue mechanics model of the reduction chemistry in Figure \ref{fig:abpanel}A, taking the growth curve produced by an AMMPER simulation as input and returning the fraction of each aB species in the medium over time. The model makes two simplifying assumptions: reaction rates are not distinguished inside and outside cells, so the calculation runs on population-level growth curves with no spatial information; and unhealthy cells consume aB at a reduced rate set by a scaling factor $k$. Treating metabolism at the population level neglects cell-to-cell heterogeneity and any spatial structure in dye reduction, and $k$ represents the metabolic activity of damaged cells with a single parameter. We consider two reactions, the irreversible reduction of blue aB to pink (Equation \ref{MK_1}) and the reversible conversion of pink to colorless (Equation \ref{MK_2}), and estimate $K_1, K_2, K_3, v_1, v_2, v_3$ and $k$ by global search against the 150 MeV proton measurements (Figure \ref{fig:abpanel}B; see Materials and Methods). Each predicted curve is the mean over the archived replicate simulations for that condition, 20 to 62 runs per dose depending on how many were archived.
+
+In a typical aB reduction curve the blue value falls over time as yeast metabolic byproducts reduce the dye, and the pink value rises before falling in turn as it is reduced to the colorless species, which is not tracked optically. We consider only the first 15 hours of each curve, the blue-to-pink conversion being of greatest interest for most yeast experiments \cite{santa2020biosentinel, massaro2023biosentinel}. One further consideration is that AMMPER begins each simulation from a single cell whereas the plate-reader assay begins from a dense inoculum, so we introduce a single offset $g_0$ giving the point on the simulated growth curve that corresponds to experimental $t = 0$, fit once per strain and held fixed across all six doses.
+
+Because the redox chemistry of alamarBlue is a property of the dye rather than of the strain, we fit one set of kinetic constants to all twelve conditions at once --- six doses in each of two strains --- and let only $g_0$ differ between strains, so that nine parameters account for twelve curves and the strain difference is carried entirely by the population state. Text S3 compares this against fitting the strains separately.
+
+For the wild type, the predicted curves match the measurements with a mean absolute error of 0.030, ranging from 0.023 to 0.048 across the six doses (Figure \ref{fig:abpanel}B), at a fitted offset of $g_0 = 8.8$ generations (approximately 463 cells at $t = 0$); refitting $g_0$ per dose moves it by less than one generation (8.2 to 9.1), so a single shared value suffices.
+
+For \textit{rad51}$\Delta$ the same kinetic constants give a mean absolute error of 0.072 at $g_0 = 6.2$ generations: the mutant population behaves like a wild type population roughly 2.6 generations behind, consistent with the slower net expansion expected of a repair-deficient strain. Its residual is concentrated at the two lowest doses (0.097 at 0 Gy and 0.091 at 2.5~Gy) rather than at the high ones, and takes a specific form --- the measured curves flatten toward dose-dependent plateaus in the second half of the time course while the predicted curves continue to descend (Figure \ref{fig:abpanel}C). For both strains the predictions follow the trends in the data for the blue and the pink species, with the deviations described above.
+
+Plotted against the experimental series on matched axes (Fig. S1, Fig. S2), the predicted curves are ordered by dose in the same direction as the measured ones in both species, but the separation between doses is compressed. At the timepoint of greatest separation the spread across the six wild type curves is 0.057 in concentration fraction for blue and 0.022 for pink, against 0.225 and 0.103 measured; for \textit{rad51}$\Delta$ it is 0.067 against 0.675 and 0.025 against 0.309. The model therefore recovers the direction, shape and timing of the dose response, and between a quarter and a twelfth of its magnitude.
+
+The fitted parameters say where that magnitude is lost. The weight on damaged cells is small ($k = 0.034$), so the predicted aB signal is carried almost entirely by the healthy-cell count, and that count varies by less than eight percent across the full 0--30~Gy range because direct damage is confined to the neighborhood of the ion tracks and most cells are never intersected by one (Fig. S4). The dose dependence entering the dye chemistry is thus already small before any dye chemistry is applied. Among the rate constants, $K_2$ and $K_3$ are large relative to the substrate available, which places the reversible pink-to-colorless step in a first-order regime in which these data constrain only the ratios $v_2/K_2$ and $v_3/K_3$; $K_1$, governing the blue-to-pink step that the assay measures directly, is constrained. Text S3 reports the dose orderings, the identifiability tests and the per-condition errors.
+
+\subsection{The aB model transfers to a gamma radiation environment}
+
+AMMPER-1 simulates only the 150 MeV proton environment. In AMMPER-2 we added a gamma radiation mode, in which the simulation volume is scanned by a plane that deposits energy at random positions rather than along a track, since gamma photons deposit energy far more uniformly than charged particles do \cite{terato2014quantitative}. This provides a test of the aB model that the proton data cannot: the kinetic constants were fit to proton conditions, and the gamma measurements are a separate experiment in which the population responds to dose much more strongly. The implementation, the calibration described below, and the full set of results are given in Supplementary Text S2.
+
+The number of deposition events per plane is the product of the dose and a hit rate $k$, in events per gray per plane. Because that product is all the simulator uses, choosing $k$ is a rescaling of the dose axis and not a change to the model, which we confirm directly using archived runs at a fixed nominal dose and three different hit rates (Supplementary Text S2). We calibrated $k$ against the measured OD690 growth channel alone --- the ratio of the final population to the unirradiated control, in both strains at all doses --- obtaining $k = 1.85$ events Gy$^{-1}$ plane$^{-1}$ (Supplementary Text S2). The alamarBlue blue and pink series that the kinetic model predicts play no part in this calibration, so the errors reported below are a consequence of it rather than a target of it.
+
+With the dose axis calibrated, we predicted the gamma aB measurements using the proton kinetic constants unchanged, refitting only the inoculum offset $g_0$ per strain as we did for the two proton strains. The mean absolute error over the twelve gamma conditions is 0.049 --- 0.035 for the wild type and 0.064 for \textit{rad51}$\Delta$, against 0.030 and 0.072 for the same strains under protons (Fig. S7). The gamma comparison is therefore as good as the proton one, with the dye chemistry carried across unchanged; refitting the kinetic constants on the gamma data as well improves the mean only from 0.049 to 0.042 (Supplementary Text S2). The wild-type residual is uniform across dose (0.026--0.041), while in \textit{rad51}$\Delta$ it is concentrated at 20 and 30~Gy (0.096 and 0.116) and takes the same form as under protons, with the measured curves flattening toward dose-dependent plateaus that the model does not produce.
+
+The gamma environment also supplies the dose-dependent population response that the proton simulations do not (Supplementary Text S2). Under protons both strains retain more than 92\% of the control population across 0--30~Gy; under gamma the wild type behaves similarly (89\% at 30~Gy) but \textit{rad51}$\Delta$ falls to 33\% of the control, because spatially uniform damage reaches cells that ion tracks miss entirely and a repair-deficient strain has no intermediate damaged state in which to absorb it. That the kinetic model reproduces the aB response across this much wider range of population trajectories, without re-tuning, is evidence that the compression described in the previous subsection originates in the population model rather than in the dye chemistry.
+
+\subsection{Implementing decay and diffusion of reactive oxygen species produces little benefit over the naive model}
+
+AMMPER-2 lets the user choose a Reactive Oxygen Species (ROS) model that includes decay and diffusion (Fig. \ref{fig:panel1}D). In AMMPER-1 ROS molecules were motionless and eternal, making any location holding one a permanently toxic location, whereas in reality ROS diffuse through the medium and decompose on reacting with other molecules. We therefore use the propagator of the diffusion equation to spread the $H_2O_2$ liberated at each deposition event over the lattice points around it (Materials and Methods, Eqs. \ref{eq:01}--\ref{eq:mvn}), approximating the resulting distribution of discrete molecule counts by a multivariate normal, which is simpler to sample than the formally appropriate multivariate Conway-Maxwell-Poisson distribution and adequate here (Fig. S3; Supplementary Text S1); $OH$ remains at the deposition point in the present implementation. Parameter values follow the physical properties of ROS molecules. The decay rate depends on the chemical composition of the medium, and since the half-life under our experimental conditions is not known we took published values as a guide: these span 20 min to 5.5 hrs, with experimental values in HeLa cells at the low end, 20--30 min \cite{krumova2016overview, hernansanz2021generation, farahani2022oxidative, juan2021chemistry}. Our baseline uses an intermediate half-life of 80 min, one AMMPER yeast generation.
+
+At these baseline parameters the naive and the complex ROS models give similar damage predictions. Across multiple runs per condition, we analyzed the growth curves (Fig. \ref{fig:panel1}B,C) and the ratio of unhealthy to healthy cells over time (Fig. \ref{fig:panel1}E,F). For both cell types and all doses the complex model gave lower overall unhealthy/healthy ratios, but the two sets of curves were not statistically distinguishable ($p > 0.05$). In \textit{rad51}$\Delta$, the strain in which damage is scored as cell death and the ratio is therefore largest, a Cumulative Link Mixed Model (CLMM) comparison of medians found no difference between the two ROS models at any dose or timepoint; pairwise Wilcoxon rank-sum tests at individual timepoints, which were run for both strains, agree, and found no significant difference at 2.5 or 5 Gy in either. Because of its greater complexity the new model also takes longer to run, with the running time scaling in the number of radiation events. All results and code are in the AMMPER repository.
+
+We then asked whether varying the ROS half-life would reveal an effect, scanning 20, 80, 160 and 240 min across the literature range with approximately 25 runs per condition (Fig. \ref{fig:panel1}G). A Kruskal-Wallis test across half-lives gives $p = 0.175$, so there is insufficient evidence that any half-life produced a different distribution of unhealthy-to-healthy ratios, and any effect it has is obscured by the model's variance. The time ROS molecules persist in the medium does raise the probability of damaging nearby cells, but it matters less than where the radiation tracks fall relative to the population. The additional complexity of modeling ROS diffusion and decay therefore provides minimal advantage over the naive model under our simulation conditions. Two features of the implementation bound how large an effect either comparison could have found: only $H_2O_2$ is spread by the propagator, so the $OH$ that produces strand breaks is not relocated relative to the naive model, and removal is applied once per generation, so the half-life is resolved only in units of the generation time (Materials and Methods). Extending either is the way to test whether the null result survives.
+
+
+\subsection{Variance among AMMPER simulations is associated with localization of damage from ion tracks}
+The high variability among individual ion radiation simulations led us to investigate its source. Ion track positions are generated randomly and radiation occurs at generation 2, when the population is four cells, and we found that when the track misses the population at that point the cells are rarely damaged at all. The distribution of unhealthy-to-healthy ratios is therefore weighted heavily toward zero and is non-parametric: across all 380 archived simulations 115 register no radiation damage, giving a distribution with a spike at zero, a short right tail and no central mode, and even at the highest dose the mean ratio of damaged to healthy cells stays below 0.07 in both strains (Fig. S4A, Fig. S4B). Most of that spike is the unirradiated controls, which record no damage by construction (92 runs); the informative part is that 23 of the 288 irradiated runs also record none, all of them at 2.5 or 5~Gy, where the track count is lowest and a miss is correspondingly likely. This happens more often in the complex ROS model, because there ROS can only damage cells in early generations, before diffusion and decay reduce the local concentration, whereas in the naive model persistent molecules can still damage cells that encounter them late. Given how infrequently a yeast-sized cell is traversed by a GCR particle in deep space --- on the order of two months between proton traversals behind 1~g~cm$^{-2}$ of aluminum shielding \cite{straume2017cosmic, singh2023agent}, and far longer for HZE ions --- a zero-inflated damage distribution may in fact be accurate, though further work is needed on how best to structure AMMPER to reproduce the true distribution.
+
+The corollary is a limitation of the comparison between radiation modes. Because ion tracks miss most cells, the proton simulations deliver their nominal dose to a small and randomly selected part of the population, whereas the gamma mode deposits energy uniformly across the volume and therefore reaches every cell. The two modes are matched in nominal dose but not in how many cells that dose reaches, which is why \textit{rad51}$\Delta$ loses two thirds of its population under gamma at 30~Gy and less than a tenth under protons. That ordering should not be read as a statement about the relative biological effectiveness of the two radiation types, which for low-LET protons and photons is close to unity \cite{terato2014quantitative}: it is a consequence of the gamma hit rate having been calibrated against measured survival while the proton track count is a fixed table, so only one of the two modes is tied to a measured population response.
+
+\subsection{Graphical user interface enhances ease of use}
+To make deep space radiation simulations accessible to a broader audience, we built a graphical user interface (GUI) that replaces the sequential command-line workflow of AMMPER-1 with a single interactive dashboard (Fig. \ref{fig:guievolution}). Where AMMPER-1 required users to answer command-line prompts one at a time and then locate output files by hand (Fig. \ref{fig:guievolution}A), the GUI removes the need to read or modify Python code: a start screen offers either interface, and the dashboard collects the simulation parameters --- cell type, radiation dose, simulation type, ROS model and output directory --- runs AMMPER, and renders its outputs in the same window (Fig. \ref{fig:guievolution}B). Beyond the outputs of the base package it also produces dynamic visualizations as kinetic icons and slideshows, so a run can be followed visually over time. The command-line interface remains preferable for many replicate iterations, but the GUI serves AMMPER's mission of providing modeling tools to researchers in microbial radiobiology for whom modeling might otherwise be out of reach, and an interactive resource for space biology education \cite{vallerio2006energy, miranda2011importance, marcus1995principles, harrison2011kineticons}.
+
+\subsection{AMMPER-2 requires reduced computational resources due to optimization of visualization process and ROS damaging mechanics}
+AMMPER is designed to run on a standard desktop computer, so in AMMPER-2 we sought greater computational efficiency than AMMPER-1. Two changes account for most of it. Visualizations now plot all cells at once per generation (Algorithm 3) rather than cell by cell (Algorithm 1), which reduces the memory overhead that was the main bottleneck: $O(G)$ plotting calls instead of $O(G \cdot N)$ for $G$ generations and $N$ cells. And ROS damage is now evaluated per cell over the events in its neighborhood (Algorithm 4) rather than per event over all cells (Algorithm 2), reducing $O(R \cdot N)$ for $R$ events to approximately $O(N \cdot \bar{k})$ for $\bar{k}$ the mean number of events near a cell; the original approach became impractical once the diffusion model spread ROS more widely through the volume.
+
+We measured the second change directly, running both implementations on identical inputs and confirming that they damage the same cells (Fig. S5). The spatially filtered implementation is faster above approximately 1{,}000 ROS lattice points, by a factor that grows with problem size and reaches 8.0$\times$ at 8{,}000 points; below that it is slightly slower, because the fixed cost of a vectorized filter is not amortized over few points. The optimization therefore matters precisely in the regime the diffusion ROS model creates, since that model emits 82 lattice points per deposition event where the naive model emits one.
+
+\begin{algorithm}[!ht]
+\caption{Plotting each cell individually per generation}
+\begin{algorithmic}[1]
+\For{each generation in generations}
+    \For{each cell in cells}
+        \State plot(cell.position)
+    \EndFor
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[!ht]
+\caption{ROS damage calculation for each event}
+\begin{algorithmic}[1]
+\For{each ROS\_event in ROS\_events}
+    \For{each cell in cells}
+        \If{distance(ROS\_event.position, cell.position) < threshold}
+            \State calculate\_damage(cell, ROS\_event)
+        \EndIf
+    \EndFor
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[!ht]
+\caption{Plotting all cells simultaneously per generation}
+\begin{algorithmic}[1]
+\For{each generation in generations}
+    \State plot\_all(cells.positions)
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[!ht]
+\caption{ROS damage calculation considering nearby ROS events}
+\begin{algorithmic}[1]
+\For{each cell in cells}
+    \State nearby\_ROS\_events = get\_nearby\_ROS\_events(cell.position, ROS\_events, threshold)
+    \For{each ROS\_event in nearby\_ROS\_events}
+        \State calculate\_damage(cell, ROS\_event)
+    \EndFor
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\section{DISCUSSION}
+
+\subsection{Strengths of the AMMPER model}
+AMMPER's principal strengths are its low computational cost and the accessibility that follows from it: with default settings it runs on a standard laptop, and the GUI makes it usable without coding experience, which matters for a tool intended for researchers and educators as much as for modelers. Its modularity is a related strength, in that individual components can be modified independently --- the lifetime-diffusion ROS model presented here is one such component, and with appropriate parameters the naive model reproduces the damage it predicts. Adjusting the initial parameters (number of initial cells, simulation length and volume, timing of radiation) also lets AMMPER address experiments beyond BioSentinel and LEIA.
+
+The aB model itself is simple, and this is its second strength. Simulating radiation damage at a metabolic level would conventionally require chemical agents, metabolic networks and a mechanism coupling radiation damage to them; the aB model instead reaches a mean absolute error of 0.030 in the wild type with nine parameters, reproduces the trends in the experimental data (Figure \ref{fig:abpanel}B and Fig. S1, Fig. S2), and extends to a second strain and to a second radiation quality without re-tuning the dye chemistry.
+
+
+\subsection{Limitations and future directions}
+The clearest limitation is the AMMPER cell health mechanics, which distinguish only healthy, damaged and dead states. This is what limits the model's dynamic range. The predicted curves are ordered by dose in the correct direction throughout and, for \textit{rad51}$\Delta$, perfectly monotonically; what is compressed is the magnitude of the separation, roughly fourfold to fivefold in the wild type and tenfold or more in the mutant (Fig. S1, Fig. S2). Because the aB model takes the population trajectory as its only input it cannot spread more widely than that trajectory allows, and the simulated healthy-cell count varies by under eight percent across the full 0--30~Gy range. A damaged \textit{rad51}$\Delta$ cell is moreover assigned directly to the nonviable state, so that strain produces no intermediate-state cells at any dose, and the fitted weight on damaged cells is small in any case. Expanding the damaged state to represent modified metabolism --- a graded health state with an explicit per-cell metabolic rate --- would let dose modulate the aB signal through the metabolic activity of surviving-but-impaired cells rather than through the healthy-cell count alone. The residual misfit in \textit{rad51}$\Delta$ has a form consistent with this: the measured curves flatten toward dose-dependent plateaus that a model without a graded, dose-sensitive metabolic state cannot produce.
+
+The gamma mode carries its own limitations. It has been calibrated against a single published survival dataset \cite{brennan2001persistent} and one alamarBlue experiment per strain, so its hit rate should be read as fit to those measurements rather than derived from radiation transport. The calibrated rate also differs between strains when they are fit separately (6.84 against 1.85 events Gy$^{-1}$ plane$^{-1}$), which a geometric property of the radiation should not; we report the shared value and note the discrepancy in Supplementary Text S2. The gamma mode is also where the binary health state is most visible, since the residual misfit concentrates in \textit{rad51}$\Delta$ at the two highest doses --- exactly where uniformly distributed damage should leave many surviving-but-impaired cells that the implementation cannot represent. Attenuation and shielding are neglected, which is defensible at the $64^3~\mu\mathrm{m}^3$ scale of the simulation volume but would not be at a larger one.
+
+A graded health state and additional radiation environments are the directions in which we expect a more complete account of cellular dynamics under deep space stress to be found.
+
+
+\section{MATERIALS AND METHODS}
+\subsection{AlamarBlue metabolism Michaelis-Menten irreversible kinetics model}
+Yeast metabolism at the genome level is complex, with thousands of reactions, co-factors, metabolites, genes, and other components. It is not clear how ionizing radiation affects each individual component of the network; deleting individual genes or components would likely miss the physically disruptive effect of energy deposition by an ion track. We therefore focused AMMPER on modeling alamarBlue (aB) metabolism at each individual cell as being dependent on the overall cell health state of the whole cell. In order to make the aB uptake rate of each cell concentration-dependent, Michaelis-Menten kinetics \cite{chang2005physical, atkins2011physical, wilson1988biochemistry} are used:
+
+\begin{align}
+    \frac{\mathrm{d}[P]}{\mathrm{d}t} = v_{1}\frac{[B]}{[B] + K_1}\label{MK_1}
+    \\
+    \frac{\mathrm{d}[C]}{\mathrm{d}t} = v_{2}\frac{[P]}{[P] + K_2}\label{MK_2}
+\end{align}
+Where $[P]$ denotes the pink (aB reduced), $[B]$ the blue (aB oxidized), and $[C]$ the clear concentrations. Here, $v_1, v_2$ are the maximum rates, and $K_1, K_2$ are the equilibrium constants.
+Then, the AMMPER growth curves are used to update the total intake rates per generation:
+\begin{align}
+    v_P = n \frac{\mathrm{d}[P]}{\mathrm{d}t} + k d \frac{\mathrm{d}[P]}{\mathrm{d}t}
+    \\
+    v_C = n \frac{\mathrm{d}[C]}{\mathrm{d}t} + k d \frac{\mathrm{d}[C]}{\mathrm{d}t}
+\end{align}
+Where $n$ and $d$ correspond to the total number of healthy and damaged cells for a given generation. The intake rates and concentrations are calculated recursively and are generation dependent. Here, $k$ serves the same purpose as in the preliminary models described above. Each concentration is normalized by dividing by the total concentration. Because the kinetic constants are properties of the dye rather than of the radiation exposure, one set is fitted jointly to all twelve conditions --- six doses in each of two strains --- with only the inoculum offset $g_0$ allowed to differ between strains; the search procedure is described under ``Parameter fitting for the kinetic model'' below. We implemented this model in Python with supporting packages such as numpy, scikit-learn, and scipy.
+
+\subsubsection{AlamarBlue metabolism Michaelis-Menten reversible kinetics model}\label{modelaBsection}
+The process from pink to clear is reversible, so Equation \ref{MK_2} requires a small modification to represent it. We use the notation found in the literature \cite{imperial2014enzyme}:
+\begin{align}
+    v_2 = \frac{v_f\alpha - v_r\pi}{1+\alpha+\pi}
+    \\
+    \alpha = \frac{[P]}{K_2} 
+    \\
+    \pi = \frac{[C]}{K_3}
+\end{align}
+This introduces a new pair of parameters that we rename for convenience: $v_f\to v_2, v_r\to v_3, K_2, K_3$.
+
+\subsection{Error metric}\label{fittingparam}
+To assess how well the fitted model recapitulated the experimental data, the experimental and predicted curves were compared using the mean absolute error, i.e., the mean of the absolute deviations between predicted and experimental values, averaged over both aB species and all measured timepoints:
+\begin{equation}
+\sigma = \frac{1}{n}\sum^n_{i = 1} |x_i - y_i| \label{error}
+\end{equation}
+This is the objective minimized during fitting and the metric reported throughout the Results and in Supplementary Text S3. The colorless species is not measured optically and therefore does not enter the error.
+
+\subsection{Parameter fitting for the kinetic model}
+The rate constants reported in the Results were estimated by fitting the kinetic model to all twelve experimental conditions at once --- six radiation doses in each of two strains. Because the redox chemistry of alamarBlue is a property of the dye rather than of the genotype, the six rate constants and the weight $k$ on damaged cells are shared across all twelve conditions, and only the inoculum offset $g_0$ differs between strains, giving nine parameters for twelve measured curves. We used differential evolution (\texttt{scipy.optimize.differential\_evolution}, seeded for reproducibility) as a global search, and refined each offset by exhaustive scan with the kinetics held fixed. The objective is the mean absolute error of Equation \ref{error}, computed over both species and all measured timepoints. The choice of optimizer is not itself under test; the same objective could be minimized by other means. The bounds and the random seed are recorded with the fitted values, and the search is described in full in Supplementary Text S3.
+
+Predictions and measurements are placed on a common scale before the error is computed, so that the reported values are interpretable as fit quality rather than as a units mismatch. The experimental series are normalized against the total dye present at $t = 0$, so the measured blue and pink fractions together with the unmeasured colorless remainder sum to unity; the kinetic model conserves dye by construction, so its three species sum to unity at every timepoint. Text S3 gives the checks on this: that the implied colorless fraction and the measured blue-plus-pink sum behave as the reaction chemistry requires, and that no part of the reported discrepancy is attributable to the two series being scaled differently.
+
+The resulting values are $v_1, v_2, v_3 = 3.22, 18.6, 16.0$ and $K_1, K_2, K_3 = 1.39 \times 10^4, 218, 303$, with $k = 0.034$, $g_0 = 8.81$ generations for the wild type and $g_0 = 6.21$ for \textit{rad51}$\Delta$. We note that $K_2$ and $K_3$ are both large relative to the amount of the corresponding substrate present, which places the reversible pink-to-colorless pair in an effectively first-order regime in which only the ratios $v_2/K_2$ and $v_3/K_3$ are constrained by these data: scaling either pair together by a factor of 100 leaves the mean absolute error unchanged to three decimal places, whereas the same scaling applied to $(v_1, K_1)$ nearly doubles it. $K_2$ and $K_3$ should therefore be regarded as not individually identifiable from the present measurements, and we do not interpret their absolute magnitudes; $K_1$ is constrained. The per-condition errors, the identifiability checks, and the treatment of mass conservation in the integrator are given in Text S3.
+
+\subsection{Diffusion and decay ROS molecule modeling}
+AMMPER-1 modeled ROS molecules as maintaining static locations in space and existing eternally. This simplification reduced the model's complexity and decreased the computational time for each simulation, but it is not physically accurate: real ROS molecules move away from where they were created and are consumed over time. AMMPER-2 therefore replaces this treatment with two explicit processes, diffusion and decay, described in turn below. Both act on the individual ROS molecules already generated by the RITRACKS energy deposition events, and both matter because the damage a cell sustains depends on how close ROS molecules come to it and for how long.
+
+\textit{Diffusion.} The physical starting point is the diffusion equation,
+\begin{equation}
+\partial_t u(\bold{r},t) = \nabla \cdot (D(u,r)\nabla u(\bold{r},t))\label{eq:01}
+\end{equation}
+where the vector $\bold{r}$ is the location in three-dimensional space, $D$ is the diffusion coefficient, and $u$ is the density of the diffusing material. Each energy deposition event is effectively a point source, so the relevant solution of Equation \ref{eq:01} is its Green's function, or propagator \cite{saxton2007modeling, boas1984mathematical}:
+\begin{equation}
+    P(\bold{r},t)dV = \frac{1}{(4\pi D t)^{d/2}}e^{\frac{-r^2}{4Dt}}dV \label{eq:02}
+\end{equation}
+Equation \ref{eq:02} gives the probability of finding a molecule a distance $r$ from its point of origin after a time $t$, and it is a Gaussian whose width grows as $\sqrt{2Dt}$. This is what makes the implementation straightforward: rather than integrating Equation \ref{eq:01} on the AMMPER lattice, we can distribute the ROS liberated at each deposition event over the lattice points around it in proportion to the corresponding multivariate normal density,
+\begin{equation}
+    \mathcal{B}(x) = \frac{1}{\sqrt{(2\pi)^d|\Sigma|}}e^{-\frac{1}{2}(x-\mu)^T\Sigma^{-1}(x-\mu)} \label{eq:mvn}
+\end{equation}
+where the mean $\mu$ is the location of the deposition event and the covariance matrix $\Sigma$ sets the spread. We implemented Equation \ref{eq:mvn} with the SciPy Python package \cite{virtanen2020scipy}, evaluating it at each deposition event on a $9 \times 9$ neighborhood of lattice points and distributing the $H_2O_2$ yield over that neighborhood in proportion to the density. Three properties of the present implementation should be stated plainly, since they bound what the diffusion model can do. The covariance is fixed at $\Sigma = [[4, -1], [-1, 4]]$ in lattice units rather than being set from a species diffusion coefficient and an elapsed time, so the spread corresponds to a single characteristic diffusion length --- a standard deviation of two lattice units, or approximately 2~$\mu$m at AMMPER's 1~$\mu$m lattice spacing, chosen to be of the order reported for $H_2O_2$ --- and does not broaden between generations; the neighborhood is two-dimensional, spread in $y$ and $z$ with the deposition coordinate in $x$ unchanged; and only $H_2O_2$ is spread, with the $OH$ yield left at the deposition point, so the two species are not given independent propagators. The consequence is that the diffusion model changes where $H_2O_2$ is found and, through the removal process described next, for how long any molecule persists, but it does not relocate the $OH$ that drives strand-break damage in either strain. This is one reason the comparison against the naive model reported in the Results finds so little difference, and giving $OH$ its own propagator is the most direct extension of the present implementation. Strictly speaking, because AMMPER tracks discrete molecules on a Cartesian lattice, the per-voxel molecule counts produced by superimposed point sources follow a multivariate Conway-Maxwell-Poisson distribution rather than a Gaussian; that distribution is difficult to implement and to sample from, and Equation \ref{eq:mvn} is the continuous approximation to it that reproduces the same diffusive broadening (Supplementary Text S1).
+
+\textit{Decay.} ROS molecules are removed from the simulation according to an exponential decay law: at each cell replication generation after the exposure generation, the code deletes a randomly selected subset of the existing ROS molecules, with the surviving fraction $2^{-\Delta t / t_{1/2}}$ set by the assumed half-life $t_{1/2}$ and the generation time $\Delta t$. The removal is therefore per generation rather than continuous, so the half-life enters the simulation only through that fraction, and the resolution of the scan below is limited by the generation time. The baseline is a half-life of one generation, a surviving fraction of 0.5. Because ROS decomposition rates are context-specific and depend on the chemistry of the cell medium, no single half-life is correct for our conditions, so we conducted a literature review to establish the physically plausible range to test in AMMPER \cite{petasne1997hydrogen, yazici2010factors, wagner2013assay, guarino2019reaction, nakamura2003micromolar} and treated the half-life as a parameter to be scanned over that range (Results).
+
+
+\subsection{Statistical analysis}
+Two comparisons in this work are inferential, and both concern the ROS model: whether the naive and the diffusion-decay implementations give different damage, and whether the ROS half-life matters. Both were run in R (version 4.3.1) on the per-run ratio of unhealthy to healthy cells, using \texttt{ordinal} \cite{christensen2019ordinal}, \texttt{RVAideMemoire}, \texttt{emmeans} and \texttt{rstatix} on top of \texttt{tidyverse}.
+
+Both comparisons are non-parametric by necessity rather than by preference. The damage ratio is zero-inflated: no damage is recorded in either of the unirradiated controls, and among irradiated runs the ion track is placed at random when the population is four cells, so runs in which it misses the population record no damage either (Fig. S4). Shapiro-Wilk tests within dose and timepoint groups confirmed non-normality. We therefore did not use the repeated-measures ANOVA that the design would otherwise suggest.
+
+For the naive versus diffusion-decay comparison we binned the damage ratio into twelve ordered levels of width 0.002 and fitted a cumulative link mixed model (\texttt{clmm}) with the ROS-model-by-dose combination and timepoint as interacting fixed effects and run identity as a random effect, testing the fixed effects by type-II analysis of deviance (\texttt{Anova.clmm}) and following up with Tukey-adjusted pairwise comparisons of the estimated marginal means. Binning to an ordinal response, rather than modeling the ratio directly, is what accommodates the point mass at zero. The model was fitted on \textit{rad51}$\Delta$, where damage is scored as death and the ratio spans the widest range; the same contrasts were checked in both strains at individual timepoints with unpaired Wilcoxon rank-sum tests. For the half-life scan (20, 80, 160 and 240 min) we used a Kruskal-Wallis test across half-lives, with Holm-corrected pairwise Wilcoxon rank-sum tests to follow if it reached significance; it did not, so no pairwise tests are reported. The complete outputs of both analyses --- the model fit, its type-II ANOVA table, the marginal-mean contrasts, the rank-sum and Kruskal-Wallis results, and the Shapiro-Wilk tests used to select them --- together with the R and Python scripts that produce them and every figure reported here, are in the AMMPER repository, so no value in this work is one that cannot be recomputed.
+
+Figures were produced in Python with Matplotlib \cite{hunter2007matplotlib} through the PubliPlots library \cite{botas2025publiplots}, which fixes the size of the plot axes rather than of the canvas so that panels of the same nominal shape are physically the same size across figures.
+
+\clearpage
+
+\section{FIGURES}
+
+\begin{figure*}[ht]
+\begin{center}
+\includegraphics[width=\textwidth]{Panels/comprehensive_2row_panel.png}
+\end{center}
+\caption{\textbf{Overview of the AMMPER radiation simulation and comparison of ROS models.} \textbf{(A)} Schematic of the AMMPER simulation: an ionizing proton track traverses the medium, depositing energy that generates reactive oxygen species (ROS), which damage nearby yeast cells. The diagram also depicts the cell damage, repair, and growth/replication mechanisms. \textbf{(B)} Simulated growth curves for wild-type (WT) cells under the naive ROS model at 2.5 and 5.0 Gy and the complex (diffusion-and-decay) ROS model at 2.5 and 5.0 Gy. \textbf{(C)} As in (B) but for \textit{rad51}$\Delta$ cells. \textbf{(D)} Conceptual comparison of the naive ROS model (static, persistent molecules) and the complex ROS model (diffusion and decay). \textbf{(E)} Effect of the ROS model on WT cells, shown as the unhealthy-to-healthy cell ratio over time for the naive and complex models (same configurations as the growth curves). \textbf{(F)} As in (E) but for \textit{rad51}$\Delta$ cells. \textbf{(G)} Effect of ROS half-life in the complex ROS model, comparing half-lives of 20, 80, 160, and 240 min (i.e., 20 min and 1, 2, and 3 yeast generations, where one generation is 80 min).}
+\label{fig:panel1}
+\end{figure*}
+
+\begin{figure*}[ht]
+\begin{center}
+\includegraphics[width=\textwidth,height=0.65\textheight,keepaspectratio]{Panels/comprehensive_alamarblue_stacked.png}
+\end{center}
+\caption{\textbf{AlamarBlue (aB) reduction chemistry and Michaelis-Menten model predictions.} \textbf{(A)} Sequential reduction of alamarBlue: the oxidized blue form (resazurin) is irreversibly reduced to the pink form (resorufin), which is further reduced to the colorless form (dihydroresorufin); arrows give the direction of conversion. \textbf{(B)} Model predictions for WT cells at 0, 2.5, 5, 10, 20 and 30~Gy. Predicted blue and pink aB concentration ratios are solid lines, the corresponding measurements points. \textbf{(C)} As in (B) for \textit{rad51}$\Delta$, at the same kinetic constants and a strain-specific offset $g_0$. The residual is larger and concentrated at the two lowest doses, where the measured curves flatten toward dose-dependent plateaus while the predictions continue to descend.}
+\label{fig:abpanel}
+\end{figure*}
+
+\begin{figure*}[ht]
+\begin{center}
+\includegraphics[width=\textwidth]{Panels/figure_AMMPER_CLI_vs_GUI.png}
+\end{center}
+\caption{\textbf{Workflow comparison between the original AMMPER (AMMPER 1) interface and the redesigned AMMPER 2 GUI.}
+\textbf{(A)} AMMPER 1 workflow, in which parameter selection, simulation execution, and results retrieval occurred as separate, sequential steps: users answered CLI prompts one at a time, then manually located output files after the run completed, with no visual feedback during execution.
+\textbf{(B)} AMMPER 2 workflow, in which all simulation parameters (simulation type, radiation dose, cell type, ROS model, output path) are set from a single configuration screen, launched with one click, and monitored in real time via on-screen rendering of simulation state at successive generations.}
+\label{fig:guievolution}
+\end{figure*}
+
+\clearpage
+
+\begin{funding}
+\section{FUNDING}
+This research was supported by the following sources. Daniel Palacios was supported by a fellowship from the Gulf Coast Consortia on the NLM Training Program in Biomedical Informatics and Data Science (T15~LM007093), by the National Science Foundation Graduate Research Fellowship Program (NSF GRFP Fellow ID 2024370642), and by NASA's Space Life Sciences Training Program (SLSTP). Pramesh Sharma was supported by NASA's Minority University Research and Education Project (MUREP) internship program.
+%TODO: Add funding sources for the remaining authors (funder name, grant number, and recipient author).
+\end{funding}
+
+% No non-financial acknowledgments yet. Uncomment and fill in if needed
+% (personal assistance, contributor roles, etc.); leave commented to avoid an empty heading.
+%\begin{acknowledgments}
+%\section{ACKNOWLEDGMENTS}
+%\end{acknowledgments}
+
+
+\section{DATA AVAILABILITY STATEMENT}
+All data, source code, and models generated or analyzed during this study are publicly available. The complete AMMPER-2 source code, including the alamarBlue kinetics model, the reactive oxygen species diffusion-and-decay model, and the graphical user interface, together with the simulation outputs, experimental datasets, and the analysis scripts used to generate the figures and statistics reported here, are openly available in the AMMPER repository at \url{https://github.com/nasa/AMMPER}. No restrictions apply to the availability of these materials.
+
+\begin{conflictsinterest}
+\section{CONFLICTS OF INTEREST}
+The authors declare that they have no competing interests, financial or otherwise, that could have influenced the work reported in this manuscript. The funders had no role in the study design; in the collection, analysis, or interpretation of data; in the writing of the manuscript; or in the decision to submit the work for publication.
+\end{conflictsinterest}
+
+
+\subsection{Supplemental material}
+The supplemental file (compiled separately) contains Supplementary Text S1 (the multivariate distribution used for ROS diffusion), Supplementary Text S2 (the gamma radiation mode, its hit-rate calibration, and the alamarBlue comparison under gamma exposure), Supplementary Text S3 (fitting the alamarBlue kinetics model), Supplementary Text S4 (converting absorbance measurements to aB concentrations), and Supplementary Figures S1--S7. Each item is cited from the main text, and each supplementary text section names the main-text section that refers to it.
+
+\section{REFERENCES}
+\bibliographystyle{unsrt}
+\bibliography{references}
+
+\end{document}

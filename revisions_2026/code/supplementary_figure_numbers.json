@@ -1,0 +1,179 @@
+{
+  "dose_trend_spread_WT": {
+    "blue": 0.05735781507158283,
+    "pink": 0.021715029160787602
+  },
+  "dose_trend_spread_rad51": {
+    "blue": 0.06732129283887422,
+    "pink": 0.025325983035600408
+  },
+  "spread_WT": {
+    "blue": {
+      "predicted": 0.05735781507158283,
+      "experimental": 0.22533953556880382
+    },
+    "pink": {
+      "predicted": 0.021715029160787602,
+      "experimental": 0.10282248395684654
+    }
+  },
+  "spread_rad51": {
+    "blue": {
+      "predicted": 0.06732129283887422,
+      "experimental": 0.674965868543543
+    },
+    "pink": {
+      "predicted": 0.025325983035600408,
+      "experimental": 0.3091080218989194
+    }
+  },
+  "damage": {
+    "total_runs": 380,
+    "zero_damage_runs": 115,
+    "zero_fraction": {
+      "WT": 0.3592233009708738,
+      "rad51": 0.23563218390804597
+    },
+    "per_condition": {
+      "WT_0": {
+        "n_runs": 62,
+        "zero_runs": 62,
+        "mean_damaged": 0.0,
+        "mean_dead": 0.0,
+        "max_total": 0.0
+      },
+      "WT_2.5": {
+        "n_runs": 32,
+        "zero_runs": 8,
+        "mean_damaged": 0.003704708653590958,
+        "mean_dead": 0.0,
+        "max_total": 0.01681552541625317
+      },
+      "WT_5": {
+        "n_runs": 30,
+        "zero_runs": 4,
+        "mean_damaged": 0.009055567526379723,
+        "mean_dead": 0.0,
+        "max_total": 0.019735379141649988
+      },
+      "WT_10": {
+        "n_runs": 20,
+        "zero_runs": 0,
+        "mean_damaged": 0.02309064501071877,
+        "mean_dead": 0.0,
+        "max_total": 0.04526107547509142
+      },
+      "WT_20": {
+        "n_runs": 30,
+        "zero_runs": 0,
+        "mean_damaged": 0.04038691031935772,
+        "mean_dead": 0.0,
+        "max_total": 0.06446435736257858
+      },
+      "WT_30": {
+        "n_runs": 32,
+        "zero_runs": 0,
+        "mean_damaged": 0.03738084640426165,
+        "mean_dead": 0.0,
+        "max_total": 0.06195511036913374
+      },
+      "rad51_0": {
+        "n_runs": 30,
+        "zero_runs": 30,
+        "mean_damaged": 0.0,
+        "mean_dead": 0.0,
+        "max_total": 0.0
+      },
+      "rad51_2.5": {
+        "n_runs": 29,
+        "zero_runs": 8,
+        "mean_damaged": 0.0,
+        "mean_dead": 0.0050027464367674085,
+        "max_total": 0.020839500325617193
+      },
+      "rad51_5": {
+        "n_runs": 30,
+        "zero_runs": 3,
+        "mean_damaged": 0.0,
+        "mean_dead": 0.010894654243859415,
+        "max_total": 0.03179330885918127
+      },
+      "rad51_10": {
+        "n_runs": 30,
+        "zero_runs": 0,
+        "mean_damaged": 0.0,
+        "mean_dead": 0.022160456312560816,
+        "max_total": 0.04266222139902451
+      },
+      "rad51_20": {
+        "n_runs": 30,
+        "zero_runs": 0,
+        "mean_damaged": 0.0,
+        "mean_dead": 0.03891376802760526,
+        "max_total": 0.07444589308996089
+      },
+      "rad51_30": {
+        "n_runs": 25,
+        "zero_runs": 0,
+        "mean_damaged": 0.0,
+        "mean_dead": 0.06366464716449444,
+        "max_total": 0.0926684738069722
+      }
+    }
+  },
+  "ros_timing": {
+    "crossover_ros_points": 1000,
+    "max_speedup": 7.990885248615223,
+    "speedup_spread_over_cell_counts": 1.072090684391603,
+    "max_speedup_at": 8000,
+    "machine": {
+      "platform": "Linux-6.12.94-123.180.amzn2023.x86_64-x86_64-with-glibc2.39",
+      "processor": "x86_64",
+      "python": "3.12.13",
+      "numpy": "1.26.4",
+      "pandas": "2.3.3"
+    }
+  },
+  "smac": {
+    "runs": [
+      {
+        "run_id": "0a83b4a6",
+        "n_trials": 100,
+        "best": 0.48921017097823094
+      },
+      {
+        "run_id": "21f22f73",
+        "n_trials": 5,
+        "best": 1.5856790432356176
+      },
+      {
+        "run_id": "57d03fb6",
+        "n_trials": 100,
+        "best": 0.34488029736638903
+      },
+      {
+        "run_id": "90ded027",
+        "n_trials": 10,
+        "best": null
+      },
+      {
+        "run_id": "e61558c8",
+        "n_trials": 10,
+        "best": null
+      },
+      {
+        "run_id": "ee846ffc",
+        "n_trials": 10,
+        "best": 0.7489287303881176
+      }
+    ]
+  },
+  "search": {
+    "grid_mean": 0.5863221307667283,
+    "bo_mean": 0.5221032458969677,
+    "mean_reduction": 0.06421888486976071,
+    "ttest_p": 1.6047492962107226e-07,
+    "mannwhitney_p": 0.24025974025974026,
+    "bo_better_at": 6
+  }
+}
