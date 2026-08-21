@@ -1,56 +1,42 @@
 """
 Compare global optimizers for the joint aB kinetics fit (comparison figure).
 
-All three optimizers -- differential_evolution, dual_annealing, and CMA-ES --
-are actively run here, each across multiple independent seeds (see
-run_multi_seed), each left to its own default convergence criteria rather
-than capped to a shared evaluation budget. This is a change from an earlier
-version of this module, which loaded a previously-fit differential_evolution
-result from disk rather than rerunning it, specifically so the reported
-number matched exactly what appears elsewhere in the revision. That
-constraint has been dropped in favor of putting all three optimizers through
-the same multi-seed, convergence-tracked treatment, since a single loaded fit
-couldn't participate in the seed-stability and convergence-trajectory
-comparisons the other two now get. The prior on-disk fit is still loaded and
-printed for reference at the start of a run (see main()), so a large
-divergence between it and the newly-run best-of-N result would be visible
-immediately rather than silently.
+Panel A reuses the differential_evolution fit already produced by
+fit_ab_model_fixed.py (loaded from fitted_parameters.json, not rerun -- so the
+number shown here is exactly the number reported elsewhere in the revision,
+not a second DE run that happens to agree with the first). Panels B and C run
+two additional global optimizers -- dual_annealing and CMA-ES -- on the same
+_joint_objective, each left to its own default convergence criteria rather
+than capped to a shared evaluation budget.
 
 That is a deliberate choice, not an oversight: the point of this comparison is
 not "which optimizer is most efficient under a fixed allowance," it is
 "does the fit depend on which search algorithm was used." Capping every
-optimizer to a shared nfev would answer the first question, and would leave
-open the objection that a competing optimizer looked worse only because it
-was cut off before its natural stopping point rather than because it
-converges to a worse answer. Letting each algorithm run to its own
-convergence (from several seeds, keeping the best) and then comparing the
-resulting parameters and MAE answers the second, stronger question: three
-structurally different search strategies -- population with crossover, an
-annealed trajectory, and covariance-matrix adaptation -- converging to
-compatible fits is evidence the result is a property of the data and the
-physicality constraint, not an artifact of one optimizer's settings or one
-lucky seed. nfev and wall time are still recorded and shown on each panel,
-but as descriptive output, not as an equalized input.
+optimizer to DE's nfev would answer the first question, and would leave open
+the objection that a competing optimizer looked worse only because it was cut
+off before its natural stopping point rather than because it converges to a
+worse answer. Letting each algorithm run to its own convergence and then
+comparing the resulting parameters and MAE answers the second, stronger
+question: three structurally different search strategies -- population with
+crossover, an annealed trajectory, and covariance-matrix adaptation --
+converging to compatible fits is evidence the result is a property of the data
+and the physicality constraint, not an artifact of one optimizer's settings.
+nfev and wall time are still recorded and shown on each panel, but as
+descriptive output, not as an equalized input.
 
 Two settings are not left at library defaults, for a resource-safety reason
-rather than a fairness one: the polish/local-search refinement step is turned
-off for all three optimizers that have one (see run_differential_evolution
-and run_dual_annealing), and dual_annealing/CMA-ES carry a generous
-evaluation-count cap (MAX_FEVALS_SAFETY_CAP) while differential_evolution's
-budget is instead bounded via DE_POPSIZE/DE_MAXITER. The objective has a
+rather than a fairness one: dual_annealing's local-search refinement is turned
+off (see run_dual_annealing), and both dual_annealing and CMA-ES carry a
+generous evaluation-count cap (MAX_FEVALS_SAFETY_CAP). The objective has a
 hard flat penalty plateau wherever a parameter set is chemically inadmissible,
-and that shape can in principle keep an algorithm's own stopping check
+and that shape can in principle keep either algorithm's own stopping check
 from ever triggering -- observed in practice as an uncapped dual_annealing run
-being killed by the OS rather than converging. The caps are set well above
-what any of the three needs on this problem, so they are a backstop against a
-runaway process, not the thing determining the reported result.
+being killed by the OS rather than converging. The cap is set well above what
+either optimizer needs on this problem, so it is a backstop against a runaway
+process, not the thing determining the reported result.
 
-Why these three
-----------------
-differential_evolution (scipy): population-based search with mutation and
-crossover. Now run fresh from multiple seeds rather than loaded from a prior
-fit -- see the note above.
-
+Why these two
+-------------
 dual_annealing (scipy, already a dependency of this codebase): simulated-
 annealing family, and a substantively different search strategy from DE --
 a single annealed trajectory with re-annealing rather than a population of
@@ -76,120 +62,34 @@ strain's g0 is polished afterward with the same exhaustive _scan_g0 used in
 fit_ab_model_fixed.py -- so any difference between panels is attributable to
 the search algorithm, not to a different downstream refinement step.
 
-Statistics
-----------
-The per-dose MAE figure now carries a formal test of "does optimizer choice
-matter," not just an eyeball comparison. Every optimizer refits the exact
-same set of dose/strain conditions, so the per-condition MAEs are *paired*
-across optimizers (matched blocks), not independent samples -- which rules
-out an unpaired test like a plain Kruskal-Wallis or one-way ANOVA across
-pooled values. A Friedman test (the non-parametric repeated-measures
-equivalent of a one-way ANOVA) is used instead: each dose/strain condition is
-a block, each optimizer is a treatment. If that omnibus test is significant,
-pairwise post-hoc Wilcoxon signed-rank tests (one per optimizer pair, on the
-matched per-condition MAEs) are run with Holm-Bonferroni correction for the
-multiple comparisons. Results are written to optimizer_comparison_stats.json,
-annotated on the error-bar figure, and printed as a small table -- intended
-to support a couple of manuscript sentences describing the comparison.
-
-That comparison is only as trustworthy as the individual optimizer runs it's
-built on, though, and dual_annealing and CMA-ES are each stochastic: a single
-seed could land in an unusually good or bad basin and never reveal that
-through its own internal convergence check (see run_dual_annealing and
-run_cma_es for why stopping is a heuristic judgment, not a certificate of
-optimality). run_multi_seed addresses this directly: each of these two
-optimizers is run from --n-seeds (default 5) independent seeds, the best-of-N
-result is what's reported as that optimizer's panel (for consistency with how
-differential_evolution -- itself population-based -- already reports its
-single best), and the full per-seed spread is kept as panel['seed_runs'] and
-summarized in optimizer_comparison_stats.json's seed_stability section. A
-small sd across seeds means the earlier Friedman/Wilcoxon comparison is
-comparing a representative result for each algorithm; a large sd would mean
-the "dual_annealing is worse" conclusion needs to be qualified as "in this
-one run" rather than stated as a property of the algorithm. See
-optimizer_comparison_seed_stability.png.
-
-Plot styling
-------------
-Both the per-dose-MAE comparison and the per-strain radiation grids go
-through publiplots (https://github.com/jorgebotas/publiplots) for consistent
-manuscript styling where available, with a plain-matplotlib fallback so the
-script still runs end-to-end if publiplots isn't installed.
-
 Outputs
 -------
-    optimizer_comparison.json          per-algorithm params, errors, nfev, wall
-                                       time, and every seed's result under
-                                       seed_runs -- now for all three
-                                       optimizers, since differential_evolution
-                                       is run fresh rather than loaded (see
-                                       module docstring's opening note)
-    optimizer_comparison_stats.json    Friedman + pairwise Wilcoxon/Holm
-                                       results, plus a seed_stability section
-                                       (per-seed spread, sd, best seed) for
-                                       all three optimizers
+    optimizer_comparison.json          per-algorithm params, errors, nfev, wall time
     optimizer_comparison.png           2x3 fitted-curve grid (strain x optimizer,
                                        highest dose only -- kept as a quick-look
                                        summary)
-    optimizer_comparison_errors.png     per-dose MAE, grouped by optimizer, one
-                                        subplot per strain, publiplots styling,
-                                        with Friedman/pairwise annotation
-    optimizer_comparison_stats.png      dedicated 3-panel statistics figure:
-                                        (A) per-dose MAE table (WT/rad51-delta
-                                        sub-columns per optimizer, bolded mean
-                                        row), (B) rank distribution per
-                                        optimizer across the 12 paired
-                                        conditions, (C) Holm-corrected
-                                        pairwise p-value heatmap localizing
-                                        which pair(s) differ
-    optimizer_comparison_convergence.png  best-objective-so-far vs. function
-                                          evaluations. Every seed's trajectory
-                                          is drawn faded with the best-of-N
-                                          seed bold, for all three optimizers
-                                          now that differential_evolution is
-                                          run fresh with tracking rather than
-                                          loaded (see module docstring)
-    optimizer_comparison_seed_stability.png  one point per seed per optimizer
-                                             (overall mean MAE), best-of-N
-                                             starred, sd annotated -- the
-                                             figure that answers "is the
-                                             reported result representative
-                                             or a lucky/unlucky draw"
-    optimizer_comparison_doses_<label>_WT.png      one figure per optimizer,
-    optimizer_comparison_doses_<label>_rad51.png   per strain: 2x3 dose grid,
-                                                   styled after the manuscript's
-                                                   own Fig. 2 panels B/C (dose
-                                                   label top-left, shared legend
-                                                   at bottom, one strain and one
-                                                   optimizer per figure). Uses
-                                                   each optimizer's best-of-N
-                                                   seed result.
-
-Supplementary material
------------------------
-Add to the supplementary list:
-  - Supplementary Fig: optimizer_comparison_errors.png
-  - Supplementary Fig: optimizer_comparison_stats.png
-  - Supplementary Fig: optimizer_comparison_convergence.png
-  - Supplementary Fig: optimizer_comparison_seed_stability.png
-  - Supplementary Figs: optimizer_comparison_doses_<optimizer>_WT.png and
-    ..._rad51.png, one pair per optimizer
-  - Supplementary Table: optimizer_comparison_stats.json, formatted as a table
-    of pairwise Holm-corrected p-values and per-optimizer seed stability
+    optimizer_comparison_errors.png    per-dose MAE, grouped by optimizer, one
+                                       subplot per strain
+    optimizer_comparison_doses_WT.png       full dose grid, wild type: rows =
+    optimizer_comparison_doses_rad51.png    optimizer, columns = all six doses,
+                                            styled after the manuscript's own
+                                            per-dose figures (measured points
+                                            with error bars, predicted curves,
+                                            dose + MAE annotation per panel).
+                                            This is the one that actually
+                                            answers "does the optimizer choice
+                                            change the fit at every dose,"
+                                            not just at the hardest one.
 """
 
 import argparse
-import itertools
 import json
 import os
-import re
 import time
 
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
-from scipy.optimize import differential_evolution, dual_annealing
-from scipy.stats import friedmanchisquare, wilcoxon
+from scipy.optimize import dual_annealing
 
 import ammper_ab_model_fixed as M
 from fit_ab_model_fixed import (
@@ -205,70 +105,14 @@ except ImportError as exc:
         "the CMA-ES panel requires the 'cma' package: "
         "pip install cma --break-system-packages") from exc
 
-# --- publiplots: confirmed API ------------------------------------------
-#     import publiplots as pp
-#     fig, axes = pp.subplots(nrows, ncols, axes_size=(w, h))
-#     pp.scatterplot(data=df, x=..., y=..., hue=..., ax=ax)   # and barplot etc.
-#     pp.legend(axes[row], side='top')   # shared legend for one row of axes
-#     pp.savefig(path)
-# axes is indexed [row] first, matching plt.subplots(..., squeeze=False).
-try:
-    import publiplots as pp
-    HAS_PUBLIPLOTS = True
-except ImportError:
-    pp = None
-    HAS_PUBLIPLOTS = False
-
-
-def _apply_publiplots_style():
-    """publiplots handles styling per-figure via pp.subplots/pp.savefig
-    rather than a global rcParams-style call, so there is nothing to set
-    globally here. Kept as a hook (and a plain-matplotlib fallback for when
-    publiplots isn't installed) in case that changes."""
-    if not HAS_PUBLIPLOTS:
-        plt.rcParams.update({
-            'figure.dpi': 200, 'savefig.dpi': 200, 'font.size': 9,
-            'axes.spines.top': False, 'axes.spines.right': False,
-        })
-
-
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT_JSON = os.path.join(HERE, 'optimizer_comparison.json')
-OUT_STATS_JSON = os.path.join(HERE, 'optimizer_comparison_stats.json')
 OUT_FIG = os.path.join(HERE, 'optimizer_comparison.png')
 OUT_ERR_FIG = os.path.join(HERE, 'optimizer_comparison_errors.png')
-OUT_STATS_FIG = os.path.join(HERE, 'optimizer_comparison_stats.png')
-OUT_CONVERGENCE_FIG = os.path.join(HERE, 'optimizer_comparison_convergence.png')
-OUT_SEED_FIG = os.path.join(HERE, 'optimizer_comparison_seed_stability.png')
-
-#: Shared color per optimizer across every figure in this module, so a color
-#: means the same thing in the MAE bars, the rank plot, and the slope plot.
-OPTIMIZER_COLORS = {
-    'differential_evolution': '#4C72B0',
-    'dual_annealing': '#DD8452',
-    'CMA-ES': '#55A868',
+OUT_DOSE_FIG = {
+    'WT': os.path.join(HERE, 'optimizer_comparison_doses_WT.png'),
+    'rad51': os.path.join(HERE, 'optimizer_comparison_doses_rad51.png'),
 }
-
-
-def _color_for(label):
-    """Falls back to matplotlib's default cycle for any label not in
-    OPTIMIZER_COLORS (e.g. the optional SMAC3 panel)."""
-    if label in OPTIMIZER_COLORS:
-        return OPTIMIZER_COLORS[label]
-    cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
-    return cycle[hash(label) % len(cycle)]
-
-
-def _slug(label):
-    """Filesystem-safe version of a panel label, e.g. 'SMAC3 (n_trials=5000)'
-    -> 'SMAC3_n_trials-5000'."""
-    slug = re.sub(r'[^\w]+', '_', label).strip('_')
-    return slug
-
-
-def _strain_dose_fig_path(label, strain):
-    return os.path.join(HERE, f'optimizer_comparison_doses_{_slug(label)}_{strain}.png')
-
 
 #: Joint search space: the 8 shared/kinetic bounds plus a second copy of the
 #: g0 bound for the rad51-delta offset -- identical to fit_ab_model_fixed.py.
@@ -288,41 +132,17 @@ UPPER = np.array([b[1] for b in JOINT_BOUNDS])
 #: reported result.
 MAX_FEVALS_SAFETY_CAP = 50000
 
-#: Default number of independent seeds run_multi_seed uses for dual_annealing
-#: and CMA-ES. Each optimizer's reported panel is the best-of-N across these
-#: seeds (see run_multi_seed's docstring for why that's the fair comparison
-#: point against differential_evolution, which is itself population-based and
-#: already reports its single best internally). The full per-seed spread is
-#: retained on the panel (seed_runs) so seed-to-seed stability -- "was the
-#: reported result a fluke, or reliably reachable" -- can be reported and
-#: plotted rather than assumed.
-DEFAULT_N_SEEDS = 5
-
-#: differential_evolution is now actually run (see run_differential_evolution)
-#: rather than loaded from a prior fit, so it can participate in the same
-#: multi-seed / convergence-tracking / seed-stability treatment as the other
-#: two. popsize and maxiter are capped for tractability rather than left at
-#: scipy's defaults or run to full convergence: total function evaluations
-#: for differential_evolution scale roughly as
-#: popsize * len(bounds) * (maxiter + 1), so with the 9-dimensional
-#: JOINT_BOUNDS used here, popsize=15 and maxiter=150 gives ~20,000
-#: evaluations per seed -- the same order of magnitude dual_annealing and
-#: CMA-ES land on with their own stopping criteria (see MAX_FEVALS_SAFETY_CAP
-#: and the docstrings on those two run_* functions), rather than an
-#: unconstrained run that could take substantially longer with no comparable
-#: benefit given the diminishing returns already observed near this budget.
-DE_POPSIZE = 15
-DE_MAXITER = 150
-
 
 class ProgressTracker:
     """Wraps _joint_objective so a long-running optimizer reports live
-    progress instead of going silent until it finishes, and records the
-    full (nfev, best-so-far) convergence trajectory as it goes.
+    progress instead of going silent until it finishes.
 
     Uses tqdm if it's installed (pip install tqdm --break-system-packages);
     otherwise falls back to a plain print every `report_every` seconds, so
-    this works with no new dependency if you'd rather not install one.
+    this works with no new dependency if you'd rather not install one. Either
+    way you get evaluation count and best-so-far MAE while the optimizer is
+    still running, which matters here because a killed or genuinely slow run
+    otherwise looks identical to a healthy one from the terminal.
     """
 
     def __init__(self, growth, experiment, label, total=None, report_every=3.0):
@@ -332,11 +152,6 @@ class ProgressTracker:
         self.total = total
         self.nfev = 0
         self.best = np.inf
-        # (nfev, best-so-far) at every evaluation -- the convergence
-        # trajectory for this optimizer. Thinned with _thin_history before
-        # being stored on a panel/written to JSON, but kept at full
-        # resolution here in case anything else wants it during the run.
-        self.history = []
         self._report_every = report_every
         self._last_report = time.time()
         self._start = time.time()
@@ -354,10 +169,6 @@ class ProgressTracker:
         self.nfev += 1
         if value < self.best:
             self.best = value
-        # float() here, not np.float64: this tuple round-trips through
-        # json.dump via optimizer_comparison.json, which chokes on numpy
-        # scalar types.
-        self.history.append((self.nfev, float(self.best)))
         if self._bar is not None:
             self._bar.update(1)
             self._bar.set_postfix(best=f'{self.best:.4f}')
@@ -375,19 +186,6 @@ class ProgressTracker:
         if self._bar is not None:
             self._bar.close()
 
-
-def _thin_history(history, max_points=2000):
-    """Evenly subsample a (nfev, best) trajectory to at most max_points
-    entries, always keeping the first and last point. Convergence plots don't
-    need every one of e.g. 18,000 evaluations to look right, and this keeps
-    optimizer_comparison.json (which the full history gets written into) a
-    sane size regardless of how long a given optimizer ran."""
-    if len(history) <= max_points:
-        return history
-    idx = np.linspace(0, len(history) - 1, max_points).astype(int)
-    idx = sorted(set(idx.tolist()) | {0, len(history) - 1})
-    return [history[i] for i in idx]
-
 #: Names for the same 9 dimensions, in the same order, for SMAC3's
 #: ConfigurationSpace (which is keyed by name rather than position).
 SMAC_PARAM_NAMES = ['v1', 'v2', 'v3', 'K1', 'K2', 'K3', 'k',
@@ -400,25 +198,19 @@ SMAC_PARAM_NAMES = ['v1', 'v2', 'v3', 'K1', 'K2', 'K3', 'k',
 #: rather than folding into a single overall-MAE number.
 DISPLAY_KEYS = ('WT_30', 'rad51_30')
 DISPLAY_G0_KEYS = ('g0_wt', 'g0_rad51')
-ROW_LABELS = ('Wild Type', 'rad51Δ')
+ROW_LABELS = ('wild type', 'rad51-delta')
 
 
-def _finalize(vector, growth, experiment, nfev, elapsed, label,
-             convergence_history=None):
+def _finalize(vector, growth, experiment, nfev, elapsed, label):
     """Turn a raw parameter vector into the same shape fit_ab_model_fixed's
-    report uses, so every panel is directly comparable.
-
-    convergence_history, if given, is the (nfev, best-so-far) trajectory
-    recorded by a ProgressTracker -- present for dual_annealing and CMA-ES,
-    absent for the loaded differential_evolution panel (see _load_de_panel),
-    which predates this tracking and is not rerun here."""
+    report uses, so every panel is directly comparable."""
     params = tuple(vector[:N_KINETIC])
     wt_g0 = _scan_g0(growth, experiment, params, WT_KEYS)
     rad_g0 = _scan_g0(growth, experiment, params, RAD_KEYS)
     err_wt = per_dose_errors(growth, experiment, params, wt_g0, WT_KEYS)
     err_rad = per_dose_errors(growth, experiment, params, rad_g0, RAD_KEYS)
     all_errors = dict(err_wt, **err_rad)
-    result = {
+    return {
         'label': label,
         'params': {'v1': params[0], 'v2': params[1], 'v3': params[2],
                    'K1': params[3], 'K2': params[4], 'K3': params[5],
@@ -428,43 +220,6 @@ def _finalize(vector, growth, experiment, nfev, elapsed, label,
         'overall_mean': float(np.mean(list(all_errors.values()))),
         'nfev': int(nfev), 'wall_seconds': float(elapsed),
     }
-    if convergence_history is not None:
-        result['convergence_history'] = convergence_history
-    return result
-
-
-def run_differential_evolution(growth, experiment, seed=SEED,
-                               popsize=DE_POPSIZE, maxiter=DE_MAXITER):
-    """differential_evolution to its own tol-based convergence or maxiter,
-    whichever comes first, with polish disabled for the same reason
-    dual_annealing's local-search step is disabled (see that function's
-    docstring): the objective's flat PENALTY=10.0 plateau wherever a
-    parameter set is chemically inadmissible is exactly the shape a
-    finite-difference gradient estimate (which is what polish's L-BFGS-B step
-    would use) handles badly -- ~0 gradient on the plateau, a sharp jump at
-    its edge -- and this keeps the comparison a clean test of each
-    algorithm's own population/annealing/covariance mechanism, with no
-    bolted-on gradient step on any of the three panels.
-
-    popsize and maxiter are capped rather than left at scipy's defaults or
-    run to unconstrained convergence -- see DE_POPSIZE/DE_MAXITER's comment
-    for the budget this targets and why. This does mean a given seed's run
-    could in principle be stopped by maxiter before its internal tol check
-    would have fired; that's an accepted tractability trade-off here, and is
-    exactly why this optimizer, like the other two, is run across multiple
-    seeds (run_multi_seed) rather than trusted from a single run.
-    """
-    start = time.time()
-    tracker = ProgressTracker(growth, experiment, 'differential_evolution',
-                              total=popsize * len(JOINT_BOUNDS) * (maxiter + 1))
-    result = differential_evolution(tracker, JOINT_BOUNDS, seed=seed,
-                                    popsize=popsize, maxiter=maxiter,
-                                    polish=False)
-    tracker.close()
-    elapsed = time.time() - start
-    return _finalize(result.x, growth, experiment, result.nfev, elapsed,
-                     'differential_evolution',
-                     convergence_history=_thin_history(tracker.history))
 
 
 def run_dual_annealing(growth, experiment, seed=SEED,
@@ -495,8 +250,7 @@ def run_dual_annealing(growth, experiment, seed=SEED,
     tracker.close()
     elapsed = time.time() - start
     return _finalize(result.x, growth, experiment, result.nfev, elapsed,
-                     'dual_annealing',
-                     convergence_history=_thin_history(tracker.history))
+                     'dual_annealing')
 
 
 def run_cma_es(growth, experiment, seed=SEED,
@@ -518,54 +272,7 @@ def run_cma_es(growth, experiment, seed=SEED,
     tracker.close()
     elapsed = time.time() - start
     return _finalize(np.asarray(es.result.xbest), growth, experiment,
-                     es.result.evaluations, elapsed, 'CMA-ES',
-                     convergence_history=_thin_history(tracker.history))
-
-
-def run_multi_seed(run_fn, growth, experiment, seeds, label):
-    """Run run_fn once per seed in `seeds`, keep the best-performing run
-    (lowest overall_mean) as the reported panel, and attach every run's
-    summary as panel['seed_runs'] so seed-to-seed stability can be reported
-    and plotted rather than assumed from a single draw.
-
-    Best-of-N, not mean-of-N or median-of-N, is the reported result, for
-    consistency with how differential_evolution is already being compared:
-    DE is itself a population-based search that returns its single best
-    candidate at convergence, and the DE panel here is one such single run
-    loaded from disk (see _load_de_panel), not an average over repeated DE
-    runs. Reporting dual_annealing and CMA-ES the same way -- "best result
-    this algorithm can reliably produce," represented by its best observed
-    outcome -- keeps the three-way comparison apples-to-apples rather than
-    comparing DE's single best against an average for the other two.
-
-    The seed-to-seed *spread* (seed_runs, and the derived sd in
-    optimizer_comparison_seed_stability.png) is what actually answers the
-    robustness question, though: if that spread is small, the reported
-    best-of-N is close to what any single seed would give you and the
-    earlier "dual_annealing is worse" conclusion is a property of the
-    algorithm rather than one unlucky run. If the spread is large, the
-    opposite is true and that matters just as much as the headline number.
-    """
-    runs = []
-    for i, seed in enumerate(seeds):
-        print(f'  [{label}] seed {i + 1}/{len(seeds)} (seed={seed})...')
-        panel = run_fn(growth, experiment, seed=seed)
-        runs.append((seed, panel))
-
-    best_seed, best_panel = min(runs, key=lambda sp: sp[1]['overall_mean'])
-    best_panel = dict(best_panel)
-    best_panel['best_seed'] = best_seed
-    best_panel['seed_runs'] = [
-        {
-            'seed': seed,
-            'overall_mean': panel['overall_mean'],
-            'nfev': panel['nfev'],
-            'wall_seconds': panel['wall_seconds'],
-            'convergence_history': panel.get('convergence_history'),
-        }
-        for seed, panel in runs
-    ]
-    return best_panel
+                     es.result.evaluations, elapsed, 'CMA-ES')
 
 
 def run_smac(growth, experiment, seed=SEED, n_trials=5000):
@@ -617,22 +324,12 @@ def run_smac(growth, experiment, seed=SEED, n_trials=5000):
     vector = np.array([incumbent[name] for name in SMAC_PARAM_NAMES])
     nfev = len(smac_opt.runhistory)
     return _finalize(vector, growth, experiment, nfev, elapsed,
-                     f'SMAC3 (n_trials={n_trials})',
-                     convergence_history=_thin_history(tracker.history))
+                     f'SMAC3 (n_trials={n_trials})')
 
 
 def _load_de_panel():
-    """The differential_evolution fit previously produced by
-    fit_ab_model_fixed.py, loaded for reference/sanity-check purposes only.
-
-    Not used as the reported differential_evolution panel in the current
-    comparison (see the module docstring's opening note): that panel now
-    comes from run_differential_evolution via run_multi_seed instead, so it
-    can participate in the same seed-stability and convergence-trajectory
-    treatment as dual_annealing and CMA-ES. Kept and printed at the start of
-    main() purely so a large divergence between the freshly-run best-of-N
-    result and this prior fit would be visible immediately.
-    """
+    """Panel A: the differential_evolution fit already on disk. Not rerun, so
+    this is exactly the number reported elsewhere in the revision."""
     with open(DE_JSON) as handle:
         report = json.load(handle)
     params = report['shared_kinetics']['params']
@@ -660,545 +357,51 @@ def _plot_panel(ax, growth, experiment, panel, condition_key, g0_key, row_label)
     ax.plot(prediction.time, prediction.pink, color='tab:red', label='pink (pred)')
     ax.scatter(exp.time, exp.blue, color='tab:blue', s=14, alpha=0.6, label='blue (meas)')
     ax.scatter(exp.time, exp.pink, color='tab:red', s=14, alpha=0.6, label='pink (meas)')
-    # Simplified subplot title: only optimizer and strain
-    title = f"{panel['label']} -- {row_label}"
-    ax.set_title(title, fontsize=10)
-    ax.set_xlabel('Time (h)')
-    ax.set_ylabel('Concentration fraction')
+    title = f"{panel['label']} -- {row_label}\nMAE={panel['overall_mean']:.4f}  nfev={panel['nfev']}"
+    if panel['wall_seconds'] is not None:
+        title += f"  {panel['wall_seconds']:.0f}s"
+    ax.set_title(title, fontsize=9)
+    ax.set_xlabel('hours')
+    ax.set_ylabel('fraction')
     ax.set_ylim(-0.05, 1.05)
 
 
-# --- statistics: is the fit sensitive to which optimizer was used? -------
-
-def _holm_correct(pvalues):
-    """Holm-Bonferroni step-down correction. Returns adjusted p-values in the
-    same order as the input, monotonically enforced (each adjusted p-value is
-    at least as large as the previous one in sorted order, standard Holm
-    behavior so p-values don't become non-monotonic after adjustment)."""
-    n = len(pvalues)
-    order = np.argsort(pvalues)
-    adjusted = np.empty(n)
-    running_max = 0.0
-    for rank, idx in enumerate(order):
-        corrected = (n - rank) * pvalues[idx]
-        running_max = max(running_max, corrected)
-        adjusted[idx] = min(running_max, 1.0)
-    return adjusted
-
-
-def _collect_paired_mae(panels):
-    """Build a (n_conditions x n_optimizers) matrix of per-condition MAE,
-    where a "condition" is one dose within one strain. Every panel must
-    report the same set of condition keys, since they all fit the same
-    experimental conditions -- that shared key set is what makes the Friedman
-    test's pairing valid."""
-    keys = (sorted(panels[0]['wt_per_dose'].keys())
-           + sorted(panels[0]['rad51_per_dose'].keys()))
-    matrix = []
-    for panel in panels:
-        row = ([panel['wt_per_dose'][k] for k in sorted(panel['wt_per_dose'].keys())]
-              + [panel['rad51_per_dose'][k] for k in sorted(panel['rad51_per_dose'].keys())])
-        matrix.append(row)
-    # transpose so rows = conditions (blocks), columns = optimizers (treatments)
-    return keys, np.array(matrix).T
-
-
-def _optimizer_statistics(panels):
-    """Friedman test across optimizers (treatments) over matched dose/strain
-    conditions (blocks), plus Holm-corrected pairwise Wilcoxon signed-rank
-    post-hoc tests. See the module docstring's Statistics section for why
-    this pairing-aware test is the right one here, rather than pooling all
-    per-condition MAEs into an unpaired test."""
-    labels = [panel['label'] for panel in panels]
-    condition_keys, matrix = _collect_paired_mae(panels)
-
-    friedman_stat, friedman_p = friedmanchisquare(*matrix.T)
-
-    pairs = list(itertools.combinations(range(len(labels)), 2))
-    raw_p = []
-    stats = []
-    for i, j in pairs:
-        diff = matrix[:, i] - matrix[:, j]
-        if np.allclose(diff, 0):
-            # identical paired values: wilcoxon errors out on an all-zero
-            # difference vector, and "no measurable difference" is exactly
-            # p=1 here, not an error condition worth propagating.
-            stat, p = 0.0, 1.0
-        else:
-            stat, p = wilcoxon(matrix[:, i], matrix[:, j])
-        raw_p.append(p)
-        stats.append(stat)
-    adjusted_p = _holm_correct(np.array(raw_p)) if pairs else np.array([])
-
-    pairwise = []
-    for (i, j), stat, p_raw, p_adj in zip(pairs, stats, raw_p, adjusted_p):
-        pairwise.append({
-            'a': labels[i], 'b': labels[j],
-            'wilcoxon_stat': float(stat),
-            'p_raw': float(p_raw), 'p_holm': float(p_adj),
-            'significant_holm_0.05': bool(p_adj < 0.05),
-        })
-
-    return {
-        'n_conditions': len(condition_keys),
-        'optimizers': labels,
-        'friedman_statistic': float(friedman_stat),
-        'friedman_p': float(friedman_p),
-        'friedman_significant_0.05': bool(friedman_p < 0.05),
-        'pairwise_holm': pairwise,
-    }
-
-
-def _stats_annotation_text(stats):
-    """Short figure-footer summary of the omnibus + post-hoc results."""
-    line1 = (f"Friedman: chi2={stats['friedman_statistic']:.2f}, "
-            f"p={stats['friedman_p']:.3f} "
-            f"({'significant' if stats['friedman_significant_0.05'] else 'n.s.'} "
-            f"at alpha=0.05, n={stats['n_conditions']} paired conditions)")
-    if stats['friedman_significant_0.05'] and stats['pairwise_holm']:
-        sig_pairs = [f"{p['a']} vs {p['b']} (p_holm={p['p_holm']:.3f})"
-                    for p in stats['pairwise_holm'] if p['significant_holm_0.05']]
-        line2 = ('Holm-corrected pairwise differences: '
-                + ('; '.join(sig_pairs) if sig_pairs else 'none survive correction'))
-    else:
-        line2 = 'Pairwise post-hoc not shown: omnibus test was not significant.'
-    return line1 + '\n' + line2
-
-
-def _seed_stability_summary(panels):
-    """For every panel that carries seed_runs (dual_annealing, CMA-ES): the
-    per-seed overall_mean values, their spread (sd), and which seed produced
-    the reported best-of-N result. differential_evolution has no seed_runs
-    (single run, loaded from disk -- see _load_de_panel) and is omitted here
-    rather than reported with a meaningless single-point "sd" of zero."""
-    summary = {}
-    for panel in panels:
-        seed_runs = panel.get('seed_runs')
-        if not seed_runs:
-            continue
-        vals = [r['overall_mean'] for r in seed_runs]
-        summary[panel['label']] = {
-            'n_seeds': len(vals),
-            'seeds': [r['seed'] for r in seed_runs],
-            'overall_means': vals,
-            'best_overall_mean': panel['overall_mean'],
-            'best_seed': panel.get('best_seed'),
-            'mean_overall_mean': float(np.mean(vals)),
-            'sd_overall_mean': float(np.std(vals, ddof=1)) if len(vals) > 1 else 0.0,
-            'range_overall_mean': [float(min(vals)), float(max(vals))],
-        }
-    return summary
-
-
-def _mae_long_dataframe(panels):
-    """Long-form dataframe of per-condition MAE, one row per
-    (strain, dose, optimizer) -- the shape publiplots' seaborn-style
-    plotting functions expect via their `data=` argument."""
-    rows = []
-    field_by_strain = {'Wild Type': 'wt_per_dose', 'rad51Δ': 'rad51_per_dose'}
-    conds_by_strain = {'Wild Type': M.conditions('WT'), 'rad51Δ': M.conditions('rad51')}
-    for panel in panels:
-        for strain, field in field_by_strain.items():
-            for cond in conds_by_strain[strain]:
-                rows.append({
-                    'strain': strain,
-                    'dose': cond.dose_gy,
-                    'optimizer': panel['label'],
-                    'mae': panel[field][cond.key],
-                })
-    return pd.DataFrame(rows)
-
-
-def _plot_error_bars_publiplots(panels, stats, out_path, suptitle):
-    """Per-dose MAE by optimizer, via publiplots' subplots/barplot/legend/
-    savefig, with the Friedman/Wilcoxon summary as a figure footer."""
-    df = _mae_long_dataframe(panels)
-    labels = [panel['label'] for panel in panels]
-    palette = {label: _color_for(label) for label in labels}
-
-    fig, axes = pp.subplots(1, 2, axes_size=(32, 26))
-    for ax, strain in zip(axes[0], ('Wild Type', 'rad51Δ')):
-        sub = df[df['strain'] == strain]
-        try:
-            pp.barplot(data=sub, x='dose', y='mae', hue='optimizer', ax=ax,
-                      palette=palette)
-        except TypeError:
-            pp.barplot(data=sub, x='dose', y='mae', hue='optimizer', ax=ax)
-        ax.set_title(strain, fontsize=13, fontweight='bold')
-        ax.set_xlabel('Dose (Gy)')
-        ax.set_ylabel('Mean absolute error')
-        ax.tick_params(labelbottom=True, labelleft=True)
-    pp.legend(axes[0], side='top')
-    fig.suptitle(suptitle, fontsize=15, fontweight='bold')
-    pp.savefig(out_path, transparent=False, facecolor='white')
-
-
-def _plot_error_bars_matplotlib(panels, stats, out_path, suptitle):
-    """Fallback for when publiplots isn't installed. Publication styling:
-    shared optimizer color palette, spines trimmed, horizontal gridlines only,
-    numbered ticks forced on both subplots (sharey=False, since the shared-
-    axis default hides the right subplot's y tick labels)."""
+def _plot_error_bars(fig, growth, experiment, panels):
+    """Separate panel: per-dose MAE, grouped by optimizer, one subplot per
+    strain. Complements the fitted-curve grid -- that shows fit *shape* at the
+    single hardest dose per strain, this shows fit *magnitude* across every
+    condition, which is the more complete quantitative comparison."""
     wt_doses = [c.dose_gy for c in M.conditions('WT')]
     rad_doses = [c.dose_gy for c in M.conditions('rad51')]
     wt_keys = [c.key for c in M.conditions('WT')]
     rad_keys = [c.key for c in M.conditions('rad51')]
-    labels = [panel['label'] for panel in panels]
 
-    fig, axes = plt.subplots(1, 2, figsize=(11, 5))
-    all_vals = []
+    axes = fig.subplots(1, 2, sharey=True)
+    width = 0.8 / len(panels)
+    color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
     for ax, doses, keys, dose_field, title in (
-            (axes[0], wt_doses, wt_keys, 'wt_per_dose', 'Wild Type'),
-            (axes[1], rad_doses, rad_keys, 'rad51_per_dose', 'rad51Δ')):
-        groups = [[panel[dose_field][key] for key in keys] for panel in panels]
-        all_vals.extend(v for g in groups for v in g)
+            (axes[0], wt_doses, wt_keys, 'wt_per_dose', 'wild type'),
+            (axes[1], rad_doses, rad_keys, 'rad51_per_dose', 'rad51-delta')):
         x = np.arange(len(doses))
-        width = 0.8 / len(groups)
-        for i, (vals, label) in enumerate(zip(groups, labels)):
-            ax.bar(x + (i - (len(groups) - 1) / 2) * width, vals, width,
-                  label=label, color=_color_for(label),
-                  edgecolor='white', linewidth=0.6)
+        for i, panel in enumerate(panels):
+            errors = [panel[dose_field][key] for key in keys]
+            ax.bar(x + (i - (len(panels) - 1) / 2) * width, errors, width,
+                  label=panel['label'], color=color_cycle[i % len(color_cycle)])
         ax.set_xticks(x)
         ax.set_xticklabels([f'{d:g}' for d in doses])
-        ax.set_xlabel('Dose (Gy)', fontsize=10)
-        ax.set_ylabel('Mean absolute error', fontsize=10)
-        ax.set_title(title, fontsize=12, fontweight='bold')
-        ax.tick_params(labelbottom=True, labelleft=True)
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.yaxis.grid(True, alpha=0.25, linewidth=0.6)
-        ax.set_axisbelow(True)
-    ymax = max(all_vals) * 1.15
-    for ax in axes:
-        ax.set_ylim(0, ymax)
-    axes[0].legend(fontsize=9, frameon=False, loc='upper left')
-    fig.suptitle(suptitle, fontsize=15, fontweight='bold')
-    fig.tight_layout(rect=(0, 0.08, 1, 0.94))
-    fig.savefig(out_path, dpi=200, bbox_inches='tight', transparent=False, facecolor='white')
+        ax.set_xlabel('dose (Gy)')
+        ax.set_title(title, fontsize=10)
+    axes[0].set_ylabel('mean absolute error')
+    axes[0].legend(fontsize=8)
 
 
-def plot_error_bars(panels, stats, out_path, suptitle='Per-dose MAE by optimizer'):
-    """Dispatches to the publiplots version if available, else matplotlib."""
-    if HAS_PUBLIPLOTS:
-        _plot_error_bars_publiplots(panels, stats, out_path, suptitle)
-    else:
-        _plot_error_bars_matplotlib(panels, stats, out_path, suptitle)
-
-
-# --- a dedicated, information-dense statistics figure ---------------------
-#
-# The bar chart answers "how big are the MAE differences." This figure
-# answers "why did the Friedman test fire" -- it shows the same result three
-# ways: the raw per-dose MAE table, the average rank per optimizer (which is
-# literally what Friedman tests), and the Holm-corrected pairwise p-values
-# that localize the effect to specific pairs.
-
-def _p_to_stars(p):
-    if p < 0.001:
-        return '***'
-    if p < 0.01:
-        return '**'
-    if p < 0.05:
-        return '*'
-    return 'ns'
-
-
-def _draw_mae_table(ax, panels):
-    """Booktabs-style table: dose rows, WT/rad51-delta sub-columns per
-    optimizer, bolded overall-mean row -- the raw numbers the rank plot and
-    p-value heatmap are summarizing, laid out the same way as the
-    manuscript's own results tables."""
-    ax.set_axis_off()
-    doses = [c.dose_gy for c in M.conditions('WT')]
-    wt_keys = [c.key for c in M.conditions('WT')]
-    rad_keys = [c.key for c in M.conditions('rad51')]
-    n_panels = len(panels)
-
-    dose_col_w = 0.20
-    sub_w = (1.0 - dose_col_w) / (2 * n_panels)
-    col_x = []
-    x = dose_col_w
-    for _ in range(n_panels):
-        col_x.append((x + sub_w / 2, x + sub_w + sub_w / 2))
-        x += 2 * sub_w
-
-    n_rows = len(doses) + 1  # + mean row
-    top, bottom = 0.80, 0.04
-    row_ys = np.linspace(top, bottom, n_rows)
-    row_h = (row_ys[0] - row_ys[1]) if n_rows > 1 else 0.1
-
-    for panel, (wt_c, rad_c) in zip(panels, col_x):
-        span_c = (wt_c + rad_c) / 2
-        ax.text(span_c, 0.95, panel['label'], transform=ax.transAxes,
-               ha='center', va='center', fontsize=8, fontweight='bold')
-        ax.text(wt_c, 0.87, 'WT', transform=ax.transAxes,
-               ha='center', va='center', fontsize=8)
-        ax.text(rad_c, 0.87, 'rad51\u0394', transform=ax.transAxes,
-               ha='center', va='center', fontsize=8)
-    ax.text(0.0, 0.87, 'Dose', transform=ax.transAxes,
-           ha='left', va='center', fontsize=8, fontweight='bold')
-
-    ax.plot([0, 1], [0.99, 0.99], color='black', lw=1.3,
-           transform=ax.transAxes, clip_on=False)
-    ax.plot([0, 1], [0.82, 0.82], color='black', lw=0.7,
-           transform=ax.transAxes, clip_on=False)
-
-    for i, (dose, wt_key, rad_key) in enumerate(zip(doses, wt_keys, rad_keys)):
-        y = row_ys[i]
-        ax.text(0.0, y, f'{dose:g} Gy', transform=ax.transAxes,
-               ha='left', va='center', fontsize=8)
-        for panel, (wt_c, rad_c) in zip(panels, col_x):
-            ax.text(wt_c, y, f"{panel['wt_per_dose'][wt_key]:.3f}",
-                   transform=ax.transAxes, ha='center', va='center', fontsize=8)
-            ax.text(rad_c, y, f"{panel['rad51_per_dose'][rad_key]:.3f}",
-                   transform=ax.transAxes, ha='center', va='center', fontsize=8)
-
-    mean_y = row_ys[-1]
-    rule_y = mean_y + row_h / 2
-    ax.plot([0, 1], [rule_y, rule_y], color='black', lw=0.7,
-           transform=ax.transAxes, clip_on=False)
-    ax.text(0.0, mean_y, 'mean', transform=ax.transAxes,
-           ha='left', va='center', fontsize=8, fontweight='bold')
-    for panel, (wt_c, rad_c) in zip(panels, col_x):
-        wt_mean = float(np.mean(list(panel['wt_per_dose'].values())))
-        rad_mean = float(np.mean(list(panel['rad51_per_dose'].values())))
-        ax.text(wt_c, mean_y, f'{wt_mean:.3f}', transform=ax.transAxes,
-               ha='center', va='center', fontsize=8, fontweight='bold')
-        ax.text(rad_c, mean_y, f'{rad_mean:.3f}', transform=ax.transAxes,
-               ha='center', va='center', fontsize=8, fontweight='bold')
-    ax.plot([0, 1], [bottom - row_h / 2, bottom - row_h / 2], color='black',
-           lw=1.3, transform=ax.transAxes, clip_on=False)
-
-    ax.set_title('A. Mean absolute error per dose', fontsize=11,
-                fontweight='bold')
-
-
-def _plot_rank_panel(ax, labels, ranks):
-    """Violin plot of rank distributions per optimizer across the 12 paired
-    conditions (rank 1 = best fit). Violins show the per-condition rank
-    distribution; medians and mean+SEM are overplotted for clarity. The
-    dashed line marks the null expected rank under no systematic difference."""
-    # ranks: rows = conditions, columns = optimizers
-    data = [ranks[:, i] for i in range(ranks.shape[1])]
-    x = np.arange(len(labels))
-
-    violins = ax.violinplot(data, positions=x, widths=0.6,
-                             showmeans=False, showmedians=False,
-                             showextrema=False)
-    for body, label in zip(violins['bodies'], labels):
-        body.set_facecolor(_color_for(label))
-        body.set_edgecolor('black')
-        body.set_alpha(0.35)
-
-    # overlay individual condition points (slightly jittered), median line,
-    # and mean + SEM marker for each optimizer
-    for i, col in enumerate(data):
-        jitter = (np.random.rand(len(col)) - 0.5) * 0.12
-        ax.scatter(np.full(len(col), x[i]) + jitter, col,
-                   color=_color_for(labels[i]), edgecolor='black', s=30,
-                   linewidth=0.4, alpha=0.8)
-        median = np.median(col)
-        mean = np.mean(col)
-        sem = np.std(col, ddof=1) / np.sqrt(len(col))
-        ax.hlines(median, x[i] - 0.22, x[i] + 0.22, color='black', linewidth=1.2)
-        ax.errorbar(x[i], mean, yerr=sem, color='black', fmt='o', capsize=4)
-
-    ax.set_xticks(x)
-    ax.set_xticklabels(labels, rotation=15, ha='right')
-    ax.set_title('B. Rank distribution per optimizer', fontsize=11, fontweight='bold')
-    ax.invert_yaxis()
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.tick_params(labelbottom=True, labelleft=True)
-
-
-def _plot_pvalue_heatmap(ax, labels, pairwise_holm):
-    """Symmetric matrix of Holm-corrected pairwise p-values, annotated with
-    the value and significance stars in each cell -- localizes exactly which
-    pair(s) the omnibus Friedman result is coming from."""
-    n = len(labels)
-    p_matrix = np.full((n, n), np.nan)
-    index = {label: i for i, label in enumerate(labels)}
-    for entry in pairwise_holm:
-        i, j = index[entry['a']], index[entry['b']]
-        p_matrix[i, j] = p_matrix[j, i] = entry['p_holm']
-
-    display = np.where(np.isnan(p_matrix), 1.0, p_matrix)
-    im = ax.imshow(display, cmap='viridis_r', vmin=0, vmax=1)
-    for i in range(n):
-        for j in range(n):
-            if i == j:
-                ax.text(j, i, '\u2014', ha='center', va='center', fontsize=10,
-                       color='0.5')
-                continue
-            p = p_matrix[i, j]
-            stars = _p_to_stars(p)
-            text_color = 'white' if p < 0.5 else 'black'
-            ax.text(j, i, f'{p:.3f}\n{stars}', ha='center', va='center',
-                   fontsize=9, color=text_color, fontweight='bold')
-    ax.set_xticks(range(n))
-    ax.set_yticks(range(n))
-    ax.set_xticklabels(labels, rotation=15, ha='right')
-    ax.set_yticklabels(labels)
-    ax.set_title('C. Holm-corrected pairwise p-values', fontsize=11,
-                fontweight='bold')
-    cbar = plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
-    cbar.set_label('p-value (Holm-corrected)', fontsize=8)
-    ax.tick_params(labelbottom=True, labelleft=True)
-
-
-def plot_optimizer_statistics_figure(panels, stats, out_path):
-    """Three-panel figure: (A) per-dose MAE table -- the raw numbers --
-    (B) rank distribution per optimizer, and (C) the Holm-corrected pairwise
-    p-values that localize which pair(s) the omnibus Friedman result comes
-    from. Meant to stand as the single figure a reader needs to go from "here
-    are the numbers" to "is that difference real" to "which optimizers does
-    it involve.\""""
-    labels = [panel['label'] for panel in panels]
-    condition_keys, matrix = _collect_paired_mae(panels)
-    ranks = np.array([pd.Series(row).rank().to_numpy() for row in matrix])
-
-    fig, axes = plt.subplots(1, 3, figsize=(18, 5.4),
-                             gridspec_kw={'width_ratios': [1.3, 1, 1]})
-    _draw_mae_table(axes[0], panels)
-    _plot_rank_panel(axes[1], labels, ranks)
-    _plot_pvalue_heatmap(axes[2], labels, stats['pairwise_holm'])
-
-    fig.tight_layout(rect=(0, 0, 1, 0.93))
-    fig.savefig(out_path, dpi=200, bbox_inches='tight', transparent=False, facecolor='white')
-
-
-def plot_convergence_figure(panels, out_path):
-    """Best-value-so-far vs. function evaluations. For any panel that ran
-    multiple seeds (seed_runs present -- see run_multi_seed), every seed's
-    trajectory is drawn faded, with the seed that produced the reported
-    best-of-N result drawn bold and in the legend -- so a reader can see at a
-    glance whether the reported curve is representative of the algorithm or
-    an outlier among its own seeds. Panels without seed_runs (currently just
-    differential_evolution, loaded rather than rerun -- see _load_de_panel)
-    fall back to a single curve, or a dashed reference line at the final
-    value if no trajectory was recorded at all.
-
-    Note the dashed reference line is not quite the same quantity as the
-    y-axis for the seeded curves (their y-axis is the joint objective during
-    the search, before the post-hoc g0 polish that per-dose MAE reflects) --
-    close enough to be a useful reference, not exact enough to treat as a
-    fourth trajectory.
-    """
-    fig, ax = plt.subplots(figsize=(7.5, 5))
-    for panel in panels:
-        color = _color_for(panel['label'])
-        seed_runs = panel.get('seed_runs')
-        if seed_runs:
-            for run in seed_runs:
-                history = run.get('convergence_history')
-                if not history:
-                    continue
-                nfevs, bests = zip(*history)
-                is_best = (run['seed'] == panel.get('best_seed'))
-                ax.plot(nfevs, bests, color=color,
-                       linewidth=2.2 if is_best else 0.8,
-                       alpha=1.0 if is_best else 0.30,
-                       label=(f"{panel['label']} "
-                              f"(best of {len(seed_runs)} seeds)")
-                             if is_best else None,
-                       zorder=3 if is_best else 2)
-        else:
-            history = panel.get('convergence_history')
-            if history:
-                nfevs, bests = zip(*history)
-                ax.plot(nfevs, bests, color=color, linewidth=1.6,
-                       label=panel['label'])
-            else:
-                ax.axhline(panel['overall_mean'], color=color, linestyle='--',
-                          linewidth=1.6,
-                          label=f"{panel['label']} "
-                                "(final per-dose MAE mean; trajectory not recorded)")
-    ax.set_xscale('log')
-    ax.set_yscale('log')
-    ax.set_xlabel('Function evaluations')
-    ax.set_ylabel('Best objective value so far')
-    ax.set_title('Optimizer convergence', fontsize=13, fontweight='bold')
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.grid(True, which='both', alpha=0.2)
-    ax.legend(fontsize=8, frameon=False, loc='upper right')
-    fig.tight_layout()
-    fig.savefig(out_path, dpi=200, bbox_inches='tight', facecolor='white')
-
-
-def plot_seed_stability_figure(panels, out_path):
-    """One point per seed per optimizer, showing overall_mean MAE, so
-    seed-to-seed variability can be judged directly rather than only trusting
-    a single best-of-N headline number. The best-of-N result actually
-    reported for that optimizer is marked with a star; a small spread around
-    it means the headline number is representative of what the algorithm
-    reliably achieves, a large spread means it isn't.
-
-    differential_evolution has no seed_runs (single run, loaded from disk --
-    see _load_de_panel) and is shown as a single diamond marker labeled
-    accordingly, rather than a distribution it doesn't have."""
-    fig, ax = plt.subplots(figsize=(7.5, 5.2))
-    xt_positions, xt_labels = [], []
-
-    for x, panel in enumerate(panels):
-        label = panel['label']
-        color = _color_for(label)
-        seed_runs = panel.get('seed_runs')
-        xt_positions.append(x)
-        xt_labels.append(label)
-
-        if seed_runs:
-            vals = np.array([r['overall_mean'] for r in seed_runs])
-            rng = np.random.default_rng(0)
-            jitter = (rng.random(len(vals)) - 0.5) * 0.18
-            ax.scatter(np.full(len(vals), x) + jitter, vals, color=color,
-                      edgecolor='black', linewidth=0.5, s=45, alpha=0.85,
-                      zorder=3)
-            ax.scatter([x], [panel['overall_mean']], color=color,
-                      edgecolor='black', linewidth=0.8, s=180, marker='*',
-                      zorder=4,
-                      label=f'{label} (best of {len(vals)} seeds)')
-            sd = np.std(vals, ddof=1) if len(vals) > 1 else 0.0
-            ax.text(x, vals.max() + (vals.max() - vals.min() + 1e-6) * 0.12,
-                   f'sd={sd:.4f}', ha='center', va='bottom', fontsize=7.5)
-        else:
-            ax.scatter([x], [panel['overall_mean']], color=color,
-                      edgecolor='black', linewidth=0.8, s=160, marker='D',
-                      zorder=4, label=f'{label} (single run, not seeded)')
-
-    ax.set_xticks(xt_positions)
-    ax.set_xticklabels(xt_labels, rotation=15, ha='right')
-    ax.set_ylabel('Overall mean MAE')
-    ax.set_title('Seed-to-seed stability per optimizer', fontsize=13,
-                fontweight='bold')
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.yaxis.grid(True, alpha=0.25, linewidth=0.6)
-    ax.set_axisbelow(True)
-    ax.legend(fontsize=8, frameon=False, loc='best')
-    fig.tight_layout()
-    fig.savefig(out_path, dpi=200, bbox_inches='tight', facecolor='white')
-
-
-# --- manuscript-style per-strain, per-optimizer dose grids ----------------
-#
-# Matches the visual language of the manuscript's own Fig. 2 panels B/C:
-# dose label bold in the top-left corner of each subplot (no boxed
-# annotation), shared legend centered at the bottom of the figure reading
-# "Experimental (Blue/Pink)" / "Predicted (Blue/Pink)", and a bold figure
-# title naming the strain. One such figure is produced per optimizer per
-# strain, rather than one figure mixing multiple optimizers, so each output
-# is a drop-in replacement for the existing panel with a different fit
-# underneath it.
-
-_LEGEND_ORDER = ('Experimental (Blue)', 'Experimental (Pink)',
-                 'Predicted (Blue)', 'Predicted (Pink)')
-
-
-def _plot_manuscript_dose_cell(ax, growth, experiment_err, params, g0,
-                               condition_key, dose_gy):
-    """One subplot styled after the manuscript's Fig. 2 panels: measured
-    points with error bars, predicted curves, dose label bold top-left."""
+def _plot_dose_cell(ax, growth, experiment_err, params, g0, condition_key,
+                    dose_gy, mae):
+    """One cell of the per-optimizer dose grid: measured (with error bars)
+    vs predicted blue/pink for one condition, styled after the manuscript's
+    own per-dose figures -- dose + MAE annotated in a corner box rather than
+    in the subplot title, so the grid reads the same way those figures do."""
     measurement, bands = experiment_err[condition_key]
     lower_blue, lower_pink = bands['lower']
     upper_blue, upper_pink = bands['upper']
@@ -1209,103 +412,62 @@ def _plot_manuscript_dose_cell(ax, growth, experiment_err, params, g0,
 
     ax.errorbar(measurement.time, measurement.blue, yerr=blue_err, fmt='o',
                color='tab:blue', ms=3, elinewidth=0.8, capsize=2,
-               label='Experimental (Blue)')
-    ax.errorbar(measurement.time, measurement.pink, yerr=pink_err, fmt='o',
-               color='tab:pink', ms=3, elinewidth=0.8, capsize=2,
-               label='Experimental (Pink)')
+               label='Blue, measured')
+    ax.errorbar(measurement.time, measurement.pink, yerr=pink_err, fmt='s',
+               color='tab:red', ms=3, elinewidth=0.8, capsize=2,
+               label='Pink, measured')
     ax.plot(prediction.time, prediction.blue, color='tab:blue', lw=1.5,
-           label='Predicted (Blue)')
-    ax.plot(prediction.time, prediction.pink, color='tab:pink', lw=1.5,
-           label='Predicted (Pink)')
+           label='Blue, predicted')
+    ax.plot(prediction.time, prediction.pink, color='tab:red', lw=1.5,
+           label='Pink, predicted')
 
-    # Dose label as a left-aligned subplot title (above the axes) rather than
-    # an in-axes text box: at t=0 the blue series sits right at ~1.0, which
-    # collided with a top-left in-axes label. Living above the plot avoids
-    # that collision entirely rather than just nudging the overlap smaller.
-    ax.set_title(f'{dose_gy:g} Gy', loc='left', fontsize=11,
-                fontweight='bold', pad=6)
-    ax.set_xlim(0, M.TRUNCATE_HOURS)
+    ax.text(0.96, 0.95, f'{dose_gy:g} Gy\nMAE {mae:.3f}',
+           transform=ax.transAxes, ha='right', va='top', fontsize=7,
+           bbox=dict(boxstyle='round', facecolor='white',
+                     edgecolor='0.7', alpha=0.9))
     ax.set_ylim(-0.05, 1.05)
-    ax.grid(True, alpha=0.25)
-    # Every subplot gets its own numbered ticks. sharex/sharey are off at the
-    # figure level for this reason (see _plot_optimizer_strain_grid), so this
-    # is just making that explicit/robust rather than relying on defaults.
-    ax.tick_params(labelbottom=True, labelleft=True)
 
 
-def _plot_optimizer_strain_grid(growth, experiment_err, panel, strain):
-    """One figure for one (optimizer, strain) pair: all doses for that strain
-    laid out the way the manuscript's own panel is (3 columns; as many rows
-    as needed for the strain's dose count, 2 rows for the usual 6 doses),
-    using only that panel's fit. Produces the direct visual replacement for
-    Fig. 2 panel B (WT) or C (rad51), once per optimizer."""
+def _plot_optimizer_dose_grid(growth, experiment_err, panels, strain):
+    """Full comparison grid for one strain: rows = optimizer, columns = every
+    dose for that strain (not just the highest one). This is the figure that
+    actually answers whether the optimizer choice changes the fit across the
+    whole dose range, rather than at a single representative point."""
     conds = M.conditions(strain)
     doses = [c.dose_gy for c in conds]
     keys = [c.key for c in conds]
     dose_field = 'wt_per_dose' if strain == 'WT' else 'rad51_per_dose'
     g0_field = 'g0_wt' if strain == 'WT' else 'g0_rad51'
-    strain_title = 'Wild Type' if strain == 'WT' else 'rad51\u0394'
+    strain_label = 'wild type' if strain == 'WT' else 'rad51-delta'
 
-    n = len(conds)
-    n_cols = 3
-    n_rows = int(np.ceil(n / n_cols))
-    # sharex/sharey are off deliberately: matplotlib's shared-axis mode hides
-    # tick labels on interior subplots, and every subplot needs its own
-    # numbered axes here. Scale consistency across panels is instead enforced
-    # explicitly (set_xlim/set_ylim inside _plot_manuscript_dose_cell) rather
-    # than relying on axis sharing to provide it.
+    n_rows, n_cols = len(panels), len(doses)
     fig, axes = plt.subplots(n_rows, n_cols,
-                             figsize=(4.2 * n_cols, 3.3 * n_rows),
-                             sharex=False, sharey=False, squeeze=False)
-
-    params = tuple(panel['params'][k] for k in
-                   ('v1', 'v2', 'v3', 'K1', 'K2', 'K3', 'k'))
-    g0 = panel[g0_field]
-
-    for i, (key, dose) in enumerate(zip(keys, doses)):
-        row, col = divmod(i, n_cols)
-        ax = axes[row, col]
-        _plot_manuscript_dose_cell(ax, growth, experiment_err, params, g0,
-                                   key, dose)
-        # annotate the per-dose MAE for this optimizer/subplot (top-right)
-        dose_mae = panel[dose_field].get(key, None)
-        if dose_mae is not None:
-            ax.text(0.98, 0.92, f'MAE={dose_mae:.3f}', transform=ax.transAxes,
-                    ha='right', va='top', fontsize=9, fontweight='bold',
-                    bbox=dict(boxstyle='round,pad=0.2', facecolor='white',
-                              alpha=0.85, edgecolor='0.8'))
-        if col == 0:
-            ax.set_ylabel('Concentration fraction')
-        if row == n_rows - 1:
-            ax.set_xlabel('Time (h)')
-
-    for j in range(n, n_rows * n_cols):
-        row, col = divmod(j, n_cols)
-        axes[row, col].set_axis_off()
+                             figsize=(2.4 * n_cols, 2.3 * n_rows),
+                             sharex=True, sharey=True, squeeze=False)
+    for row, panel in enumerate(panels):
+        params = tuple(panel['params'][k] for k in
+                       ('v1', 'v2', 'v3', 'K1', 'K2', 'K3', 'k'))
+        g0 = panel[g0_field]
+        for col, (key, dose) in enumerate(zip(keys, doses)):
+            ax = axes[row, col]
+            mae = panel[dose_field][key]
+            _plot_dose_cell(ax, growth, experiment_err, params, g0, key,
+                           dose, mae)
+            if row == 0:
+                ax.set_title(f'{dose:g} Gy', fontsize=9)
+            if col == 0:
+                ax.set_ylabel(f"{panel['label']}\nconcentration fraction",
+                             fontsize=7.5)
+            if row == n_rows - 1:
+                ax.set_xlabel('time (h)', fontsize=8)
 
     handles, labels = axes[0, 0].get_legend_handles_labels()
-    ordered = [(h, l) for l in _LEGEND_ORDER for h, ll in zip(handles, labels) if ll == l]
-    if ordered:
-        handles, labels = zip(*ordered)
-    fig.legend(handles, labels, loc='lower center', ncol=4, fontsize=9,
-              bbox_to_anchor=(0.5, -0.02 / n_rows), frameon=False)
-
-    mae = panel[dose_field]
-    overall = float(np.mean(list(mae.values())))
-    fig.suptitle(f'Alamarblue Assay: {strain_title} Strain Response to '
-                f"Radiation -- {panel['label']} (MAE={overall:.3f})",
-                fontsize=13, fontweight='bold')
-    fig.tight_layout(rect=(0, 0.05, 1, 0.93))
+    fig.legend(handles, labels, loc='lower center', ncol=4, fontsize=8,
+              bbox_to_anchor=(0.5, -0.015 / n_rows))
+    fig.suptitle(f'Gamma radiation, {strain_label}: '
+                f'predicted vs measured across all doses, by optimizer')
+    fig.tight_layout(rect=(0, 0.04, 1, 0.97))
     return fig
-
-
-def _all_doses(strains=('WT', 'rad51')):
-    """Union of dose values across the given strains, sorted ascending."""
-    doses = set()
-    for strain in strains:
-        for c in M.conditions(strain):
-            doses.add(round(float(c.dose_gy), 6))
-    return sorted(doses)
 
 
 def main():
@@ -1318,67 +480,24 @@ def main():
     parser.add_argument('--smac-trials', type=int, default=5000,
                         help='SMAC3 trial budget if --with-smac is set '
                              '(default: 5000)')
-    parser.add_argument('--n-seeds', type=int, default=DEFAULT_N_SEEDS,
-                        help='number of independent seeds to run '
-                             'dual_annealing and CMA-ES from; the best-of-N '
-                             'result is reported as that optimizer\'s panel '
-                             'and the full spread is retained for a seed-'
-                             'stability figure (default: '
-                             f'{DEFAULT_N_SEEDS}). Runtime scales linearly '
-                             'with this -- each additional seed re-runs both '
-                             'optimizers to their own convergence.')
     args = parser.parse_args()
-
-    _apply_publiplots_style()
 
     growth = M.load_growth_curves()
     experiment = M.load_experimental()
-    # load_experimental(with_error=True) returns {key: (Measurement, bands)},
-    # which is exactly what _plot_manuscript_dose_cell expects -- there's no
-    # separate "with_error_bands" function in ammper_ab_model_fixed.
-    experiment_err = M.load_experimental(with_error=True)
 
-    print('Loading prior on-disk differential_evolution fit for reference '
-         '(not used in the comparison below)...')
-    _reference_de_panel = _load_de_panel()
-    print(f"  prior fit reported MAE={_reference_de_panel['overall_mean']:.4f} "
-         f"nfev={_reference_de_panel['nfev']}")
+    panel_a = _load_de_panel()
+    print(f"differential_evolution (existing fit): "
+         f"MAE={panel_a['overall_mean']:.4f}  nfev={panel_a['nfev']}")
 
-    seeds = [SEED + i for i in range(args.n_seeds)]
+    print('\nRunning dual_annealing to its own convergence...')
+    panel_b = run_dual_annealing(growth, experiment)
+    print(f"  overall mean MAE = {panel_b['overall_mean']:.4f}  "
+         f"nfev={panel_b['nfev']}  {panel_b['wall_seconds']:.0f}s")
 
-    print(f'\nRunning differential_evolution across {len(seeds)} seeds '
-         f'{seeds}, each to its own convergence...')
-    panel_a = run_multi_seed(run_differential_evolution, growth, experiment,
-                             seeds, 'differential_evolution')
-    de_vals = [r['overall_mean'] for r in panel_a['seed_runs']]
-    print(f"  best overall mean MAE = {panel_a['overall_mean']:.4f} "
-         f"(seed={panel_a['best_seed']})")
-    print(f"  across seeds: mean={np.mean(de_vals):.4f} "
-         f"sd={np.std(de_vals, ddof=1):.4f} "
-         f"range=[{min(de_vals):.4f}, {max(de_vals):.4f}]")
-    print(f"  (prior on-disk fit for comparison: "
-         f"MAE={_reference_de_panel['overall_mean']:.4f})")
-
-    print(f'\nRunning dual_annealing across {len(seeds)} seeds {seeds}, '
-         'each to its own convergence...')
-    panel_b = run_multi_seed(run_dual_annealing, growth, experiment, seeds,
-                             'dual_annealing')
-    da_vals = [r['overall_mean'] for r in panel_b['seed_runs']]
-    print(f"  best overall mean MAE = {panel_b['overall_mean']:.4f} "
-         f"(seed={panel_b['best_seed']})")
-    print(f"  across seeds: mean={np.mean(da_vals):.4f} "
-         f"sd={np.std(da_vals, ddof=1):.4f} "
-         f"range=[{min(da_vals):.4f}, {max(da_vals):.4f}]")
-
-    print(f'\nRunning CMA-ES across {len(seeds)} seeds {seeds}, '
-         'each to its own convergence...')
-    panel_c = run_multi_seed(run_cma_es, growth, experiment, seeds, 'CMA-ES')
-    cma_vals = [r['overall_mean'] for r in panel_c['seed_runs']]
-    print(f"  best overall mean MAE = {panel_c['overall_mean']:.4f} "
-         f"(seed={panel_c['best_seed']})")
-    print(f"  across seeds: mean={np.mean(cma_vals):.4f} "
-         f"sd={np.std(cma_vals, ddof=1):.4f} "
-         f"range=[{min(cma_vals):.4f}, {max(cma_vals):.4f}]")
+    print('\nRunning CMA-ES to its own convergence...')
+    panel_c = run_cma_es(growth, experiment)
+    print(f"  overall mean MAE = {panel_c['overall_mean']:.4f}  "
+         f"nfev={panel_c['nfev']}  {panel_c['wall_seconds']:.0f}s")
 
     panels = [panel_a, panel_b, panel_c]
 
@@ -1395,24 +514,6 @@ def main():
         json.dump(report, handle, indent=2)
     print(f'\nwrote {OUT_JSON}')
 
-    print('\nComputing optimizer statistics (Friedman + pairwise Wilcoxon/Holm)...')
-    stats = _optimizer_statistics(panels)
-    stats['seed_stability'] = _seed_stability_summary(panels)
-    with open(OUT_STATS_JSON, 'w') as handle:
-        json.dump(stats, handle, indent=2)
-    print(f"  Friedman: chi2={stats['friedman_statistic']:.2f} "
-         f"p={stats['friedman_p']:.4f} "
-         f"({'sig' if stats['friedman_significant_0.05'] else 'n.s.'})")
-    for pair in stats['pairwise_holm']:
-        print(f"    {pair['a']} vs {pair['b']}: p_holm={pair['p_holm']:.4f}")
-    for label, summary in stats['seed_stability'].items():
-        print(f"  {label} seed stability: n={summary['n_seeds']} "
-             f"best={summary['best_overall_mean']:.4f} "
-             f"(seed {summary['best_seed']})  "
-             f"mean={summary['mean_overall_mean']:.4f} "
-             f"sd={summary['sd_overall_mean']:.4f}")
-    print(f'wrote {OUT_STATS_JSON}')
-
     fig, axes = plt.subplots(2, len(panels), figsize=(4.3 * len(panels), 8.0),
                              sharey=True, squeeze=False)
     for row, (condition_key, g0_key, row_label) in enumerate(
@@ -1421,34 +522,21 @@ def main():
             _plot_panel(axes[row, col], growth, experiment, panel,
                        condition_key, g0_key, row_label)
     axes[0, 0].legend(fontsize=7, loc='upper right')
-    fig.suptitle('Optimizer comparison across 30 Gy', fontsize=13, fontweight='bold')
+    fig.suptitle('Optimizer comparison, highest dose per strain '
+                '(each run to its own convergence' +
+                (', SMAC3 at a fixed trial budget' if args.with_smac else '') +
+                ')')
     fig.tight_layout()
-    fig.savefig(OUT_FIG, dpi=200, transparent=False, facecolor='white')
+    fig.savefig(OUT_FIG, dpi=200)
     print(f'wrote {OUT_FIG}')
 
-    plot_error_bars(panels, stats, OUT_ERR_FIG)
+    err_fig = plt.figure(figsize=(10, 4.2))
+    _plot_error_bars(err_fig, growth, experiment, panels)
+    err_fig.suptitle('Per-dose MAE by optimizer')
+    err_fig.tight_layout()
+    err_fig.savefig(OUT_ERR_FIG, dpi=200)
     print(f'wrote {OUT_ERR_FIG}')
-
-    plot_optimizer_statistics_figure(panels, stats, OUT_STATS_FIG)
-    print(f'wrote {OUT_STATS_FIG}')
-
-    plot_convergence_figure(panels, OUT_CONVERGENCE_FIG)
-    print(f'wrote {OUT_CONVERGENCE_FIG}')
-
-    plot_seed_stability_figure(panels, OUT_SEED_FIG)
-    print(f'wrote {OUT_SEED_FIG}')
-
-    print('\nWriting per-optimizer, per-strain dose grids '
-         '(manuscript Fig. 2 B/C style)...')
-    for panel in panels:
-        for strain in ('WT', 'rad51'):
-            fig = _plot_optimizer_strain_grid(growth, experiment_err, panel, strain)
-            path = _strain_dose_fig_path(panel['label'], strain)
-            fig.savefig(path, dpi=200, transparent=False, facecolor='white')
-            plt.close(fig)
-            print(f'  wrote {path}')
-
-    return report, stats
+    return report
 
 
 if __name__ == '__main__':
