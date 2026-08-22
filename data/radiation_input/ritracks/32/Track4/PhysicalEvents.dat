@@ -1,0 +1,62 @@
+Number of events (#/simulation)					Energy deposited (eV/simulation)
+
+Mode		By ions		By electrons 	Total 		By ions 	By electrons 		Total
+
+Ionization	2965		5555		8520		40737.1		66622.5
+1b1		1252		3097		4349		10967.5		27129.7
+3a1		820		1404		2224		9922		16988.4
+1b2		588		743		1331		9878.4		12482.4
+2a1		286		310		596		9209.2		9982
+1a1		19		1		20		760		40
+Double		0		0		0		0		0
+
+Excitation	0		0		0		0		0
+A1B1		0		0		0		0		0
+B1A1		0		0		0		0		0
+ 		0		0		0		0		0
+ 		0		0		0		0		0
+ 		0		0		0		0		0
+Plasmon		0		0		0		0		0
+
+Vibra-rota	-		22006		22006		-		3378.89
+
+DEA	-			377		377		-		3269.94
+
+Elastic				173182		173182
+
+Bremsstrahlung			0		0
+
+A1B1_NDD	0		243		2030.53		0		0
+A1B1_DD		0		315		2636.75		0		0
+B1A1_AIO	0		119		1042.44		0		0
+B1A1_NDD	0		68		680.676		0		0
+B1A1_DD1	0		59		588.279		0		0
+B1A1_DD2	0		14		142.019		0		0
+B1A1_DD3	0		4		40.444		0		0
+
+Thermalization
+Bottom				4227		4227		-		14172.9
+Top				3235		3235		-		14736.1
+
+Recombination					2325				2706.09
+
+Energy deposition events (electrons, phys-chem, ions, outside) (eV):
+73271.347839	57593.033038	40737.120000	0.000000	171601.500877
+
+Total energy deposition by ions (eV)
+171.601501
+
+Average LET (keV/microns)
+1.716015
+
+Dose (Gy)
+0.000000
+
+Voxel dose (eV):
+171601.500877
+
+Sanity check
+Total species charge (must be -1 for electron, 0 for ion simulation): 
+0
+Ratio H/O (must be 2 in all cases):
+20952	10476	2

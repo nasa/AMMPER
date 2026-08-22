@@ -1,0 +1,114 @@
+{
+  "n_conditions": 12,
+  "optimizers": [
+    "differential_evolution",
+    "dual_annealing",
+    "CMA-ES"
+  ],
+  "friedman_statistic": 5.166666666666657,
+  "friedman_p": 0.07552184450877414,
+  "friedman_significant_0.05": false,
+  "pairwise_holm": [
+    {
+      "a": "differential_evolution",
+      "b": "dual_annealing",
+      "wilcoxon_stat": 13.0,
+      "p_raw": 0.04248046875,
+      "p_holm": 0.0849609375,
+      "significant_holm_0.05": false
+    },
+    {
+      "a": "differential_evolution",
+      "b": "CMA-ES",
+      "wilcoxon_stat": 26.0,
+      "p_raw": 0.33935546875,
+      "p_holm": 0.33935546875,
+      "significant_holm_0.05": false
+    },
+    {
+      "a": "dual_annealing",
+      "b": "CMA-ES",
+      "wilcoxon_stat": 9.0,
+      "p_raw": 0.01611328125,
+      "p_holm": 0.04833984375,
+      "significant_holm_0.05": true
+    }
+  ],
+  "seed_stability": {
+    "differential_evolution": {
+      "n_seeds": 5,
+      "seeds": [
+        20260804,
+        20260805,
+        20260806,
+        20260807,
+        20260808
+      ],
+      "overall_means": [
+        0.05098211991567309,
+        0.051135579699698036,
+        0.05122799296991437,
+        0.05117157306819412,
+        0.05130134224089722
+      ],
+      "best_overall_mean": 0.05098211991567309,
+      "best_seed": 20260804,
+      "mean_overall_mean": 0.05116372157887537,
+      "sd_overall_mean": 0.0001192717838042675,
+      "range_overall_mean": [
+        0.05098211991567309,
+        0.05130134224089722
+      ]
+    },
+    "dual_annealing": {
+      "n_seeds": 5,
+      "seeds": [
+        20260804,
+        20260805,
+        20260806,
+        20260807,
+        20260808
+      ],
+      "overall_means": [
+        0.05485580725508854,
+        0.05438964230432721,
+        0.053696622056624836,
+        0.05254804218531663,
+        0.052946803576726244
+      ],
+      "best_overall_mean": 0.05254804218531663,
+      "best_seed": 20260807,
+      "mean_overall_mean": 0.053687383475616704,
+      "sd_overall_mean": 0.0009624219584905808,
+      "range_overall_mean": [
+        0.05254804218531663,
+        0.05485580725508854
+      ]
+    },
+    "CMA-ES": {
+      "n_seeds": 5,
+      "seeds": [
+        20260804,
+        20260805,
+        20260806,
+        20260807,
+        20260808
+      ],
+      "overall_means": [
+        0.0498331373890823,
+        0.049828598745956666,
+        0.049832689680414675,
+        0.04983239315053367,
+        0.049831879023157166
+      ],
+      "best_overall_mean": 0.049828598745956666,
+      "best_seed": 20260805,
+      "mean_overall_mean": 0.0498317395978289,
+      "sd_overall_mean": 1.814386835219263e-06,
+      "range_overall_mean": [
+        0.049828598745956666,
+        0.0498331373890823
+      ]
+    }
+  }
+}

@@ -1,0 +1,15 @@
+--- A_no_leak_two_stage ---
+  WT 0.0507   rad51 0.3793   all 12 0.2150   leak (0.0, 0.0)
+  g0: WT 7.26  rad51 7.34
+--- B_leak_two_stage ---
+  WT 0.0441   rad51 0.1899   all 12 0.1170   leak (0.09149060703770755, 0.11995237804028624)
+  g0: WT 7.69  rad51 6.42
+--- C_leak_joint ---
+  WT 0.0468   rad51 0.1089   all 12 0.0779   leak (0.07388933755034638, 0.11930578493298116)
+  g0: WT 8.25  rad51 5.56
+--- D_no_leak_joint ---
+  WT 0.0605   rad51 0.1087   all 12 0.0846   leak (0.0, 0.0)
+  g0: WT 6.70  rad51 4.14
+
+best over all twelve conditions: C_leak_joint
+wrote /home/sagemaker-user/code/AMMPER_organized/revisions_2026/code/ablation_leak.json

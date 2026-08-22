@@ -1,0 +1,17 @@
+Wild type reference configurations
+  reversed + published     mean MAE = 0.2412   range = 0.2230-0.2612
+  corrected + published    mean MAE = 0.3957   range = 0.3594-0.4273
+
+Fitting shared kinetics + one offset per strain (9 parameters, 12 curves jointly)...
+  wild type                mean MAE = 0.0302   range = 0.0226-0.0478
+  rad51-delta              mean MAE = 0.0716   range = 0.0494-0.0971
+  all twelve conditions    mean MAE = 0.0509   range = 0.0226-0.0971
+    g0 = 8.81 generations for the wild type (463 cells at t=0), 6.21 for rad51-delta (77 cells); 2.60 generations behind
+
+Wild type alone, kinetics then transferred (not the reported fit)
+  wild type (fit here)     mean MAE = 0.0302   range = 0.0222-0.0476
+  rad51-delta (transferred) mean MAE = 0.0722   range = 0.0497-0.0990
+  all twelve conditions    mean MAE = 0.0512   range = 0.0222-0.0990
+    the wild type is fit marginally better this way and the mutant much worse; see the module docstring.
+
+wrote /home/sagemaker-user/code/AMMPER_organized/revisions_2026/code/fitted_parameters.json

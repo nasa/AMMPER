@@ -1,0 +1,199 @@
+{
+  "stats": {
+    "submitted": 10,
+    "finished": 10,
+    "running": 0
+  },
+  "data": [
+    [
+      1,
+      null,
+      209652396,
+      null,
+      Infinity,
+      0.0,
+      2,
+      1700084151.9015424,
+      1700084151.9250464,
+      {
+        "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\danie\\anaconda3\\envs\\QCBClass\\lib\\site-packages\\smac\\runner\\target_function_runner.py\", line 184, in run\n    rval = self(config_copy, target_function, kwargs)\n  File \"C:\\Users\\danie\\anaconda3\\envs\\QCBClass\\lib\\site-packages\\smac\\runner\\target_function_runner.py\", line 257, in __call__\n    return algorithm(config, **algorithm_kwargs)\n  File \"aBFinalplotsSMAC2.py\", line 386, in train\n    bi, pi, t = AlamarblueMechanics(experimental_data, updated_parameters, \"Hypertuning\")\n  File \"aBFinalplotsSMAC2.py\", line 88, in AlamarblueMechanics\n    K3_M = var[5]\nIndexError: list index out of range\n",
+        "error": "IndexError('list index out of range')"
+      }
+    ],
+    [
+      1,
+      null,
+      398764591,
+      null,
+      Infinity,
+      0.0,
+      2,
+      1700084151.9280472,
+      1700084151.9495506,
+      {
+        "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\danie\\anaconda3\\envs\\QCBClass\\lib\\site-packages\\smac\\runner\\target_function_runner.py\", line 184, in run\n    rval = self(config_copy, target_function, kwargs)\n  File \"C:\\Users\\danie\\anaconda3\\envs\\QCBClass\\lib\\site-packages\\smac\\runner\\target_function_runner.py\", line 257, in __call__\n    return algorithm(config, **algorithm_kwargs)\n  File \"aBFinalplotsSMAC2.py\", line 386, in train\n    bi, pi, t = AlamarblueMechanics(experimental_data, updated_parameters, \"Hypertuning\")\n  File \"aBFinalplotsSMAC2.py\", line 88, in AlamarblueMechanics\n    K3_M = var[5]\nIndexError: list index out of range\n",
+        "error": "IndexError('list index out of range')"
+      }
+    ],
+    [
+      2,
+      null,
+      209652396,
+      null,
+      Infinity,
+      0.0,
+      2,
+      1700084151.9550529,
+      1700084151.9755564,
+      {
+        "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\danie\\anaconda3\\envs\\QCBClass\\lib\\site-packages\\smac\\runner\\target_function_runner.py\", line 184, in run\n    rval = self(config_copy, target_function, kwargs)\n  File \"C:\\Users\\danie\\anaconda3\\envs\\QCBClass\\lib\\site-packages\\smac\\runner\\target_function_runner.py\", line 257, in __call__\n    return algorithm(config, **algorithm_kwargs)\n  File \"aBFinalplotsSMAC2.py\", line 386, in train\n    bi, pi, t = AlamarblueMechanics(experimental_data, updated_parameters, \"Hypertuning\")\n  File \"aBFinalplotsSMAC2.py\", line 88, in AlamarblueMechanics\n    K3_M = var[5]\nIndexError: list index out of range\n",
+        "error": "IndexError('list index out of range')"
+      }
+    ],
+    [
+      2,
+      null,
+      398764591,
+      null,
+      Infinity,
+      0.0,
+      2,
+      1700084151.9785569,
+      1700084151.9990604,
+      {
+        "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\danie\\anaconda3\\envs\\QCBClass\\lib\\site-packages\\smac\\runner\\target_function_runner.py\", line 184, in run\n    rval = self(config_copy, target_function, kwargs)\n  File \"C:\\Users\\danie\\anaconda3\\envs\\QCBClass\\lib\\site-packages\\smac\\runner\\target_function_runner.py\", line 257, in __call__\n    return algorithm(config, **algorithm_kwargs)\n  File \"aBFinalplotsSMAC2.py\", line 386, in train\n    bi, pi, t = AlamarblueMechanics(experimental_data, updated_parameters, \"Hypertuning\")\n  File \"aBFinalplotsSMAC2.py\", line 88, in AlamarblueMechanics\n    K3_M = var[5]\nIndexError: list index out of range\n",
+        "error": "IndexError('list index out of range')"
+      }
+    ],
+    [
+      1,
+      null,
+      924231285,
+      null,
+      Infinity,
+      0.0,
+      2,
+      1700084152.002561,
+      1700084152.0215647,
+      {
+        "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\danie\\anaconda3\\envs\\QCBClass\\lib\\site-packages\\smac\\runner\\target_function_runner.py\", line 184, in run\n    rval = self(config_copy, target_function, kwargs)\n  File \"C:\\Users\\danie\\anaconda3\\envs\\QCBClass\\lib\\site-packages\\smac\\runner\\target_function_runner.py\", line 257, in __call__\n    return algorithm(config, **algorithm_kwargs)\n  File \"aBFinalplotsSMAC2.py\", line 386, in train\n    bi, pi, t = AlamarblueMechanics(experimental_data, updated_parameters, \"Hypertuning\")\n  File \"aBFinalplotsSMAC2.py\", line 88, in AlamarblueMechanics\n    K3_M = var[5]\nIndexError: list index out of range\n",
+        "error": "IndexError('list index out of range')"
+      }
+    ],
+    [
+      3,
+      null,
+      209652396,
+      null,
+      Infinity,
+      0.0,
+      2,
+      1700084152.20112,
+      1700084152.220123,
+      {
+        "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\danie\\anaconda3\\envs\\QCBClass\\lib\\site-packages\\smac\\runner\\target_function_runner.py\", line 184, in run\n    rval = self(config_copy, target_function, kwargs)\n  File \"C:\\Users\\danie\\anaconda3\\envs\\QCBClass\\lib\\site-packages\\smac\\runner\\target_function_runner.py\", line 257, in __call__\n    return algorithm(config, **algorithm_kwargs)\n  File \"aBFinalplotsSMAC2.py\", line 386, in train\n    bi, pi, t = AlamarblueMechanics(experimental_data, updated_parameters, \"Hypertuning\")\n  File \"aBFinalplotsSMAC2.py\", line 88, in AlamarblueMechanics\n    K3_M = var[5]\nIndexError: list index out of range\n",
+        "error": "IndexError('list index out of range')"
+      }
+    ],
+    [
+      3,
+      null,
+      398764591,
+      null,
+      Infinity,
+      0.0,
+      2,
+      1700084152.2231238,
+      1700084152.2436266,
+      {
+        "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\danie\\anaconda3\\envs\\QCBClass\\lib\\site-packages\\smac\\runner\\target_function_runner.py\", line 184, in run\n    rval = self(config_copy, target_function, kwargs)\n  File \"C:\\Users\\danie\\anaconda3\\envs\\QCBClass\\lib\\site-packages\\smac\\runner\\target_function_runner.py\", line 257, in __call__\n    return algorithm(config, **algorithm_kwargs)\n  File \"aBFinalplotsSMAC2.py\", line 386, in train\n    bi, pi, t = AlamarblueMechanics(experimental_data, updated_parameters, \"Hypertuning\")\n  File \"aBFinalplotsSMAC2.py\", line 88, in AlamarblueMechanics\n    K3_M = var[5]\nIndexError: list index out of range\n",
+        "error": "IndexError('list index out of range')"
+      }
+    ],
+    [
+      3,
+      null,
+      924231285,
+      null,
+      Infinity,
+      0.0,
+      2,
+      1700084152.2466278,
+      1700084152.266131,
+      {
+        "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\danie\\anaconda3\\envs\\QCBClass\\lib\\site-packages\\smac\\runner\\target_function_runner.py\", line 184, in run\n    rval = self(config_copy, target_function, kwargs)\n  File \"C:\\Users\\danie\\anaconda3\\envs\\QCBClass\\lib\\site-packages\\smac\\runner\\target_function_runner.py\", line 257, in __call__\n    return algorithm(config, **algorithm_kwargs)\n  File \"aBFinalplotsSMAC2.py\", line 386, in train\n    bi, pi, t = AlamarblueMechanics(experimental_data, updated_parameters, \"Hypertuning\")\n  File \"aBFinalplotsSMAC2.py\", line 88, in AlamarblueMechanics\n    K3_M = var[5]\nIndexError: list index out of range\n",
+        "error": "IndexError('list index out of range')"
+      }
+    ],
+    [
+      4,
+      null,
+      209652396,
+      null,
+      Infinity,
+      0.0,
+      2,
+      1700084152.2721343,
+      1700084152.2926385,
+      {
+        "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\danie\\anaconda3\\envs\\QCBClass\\lib\\site-packages\\smac\\runner\\target_function_runner.py\", line 184, in run\n    rval = self(config_copy, target_function, kwargs)\n  File \"C:\\Users\\danie\\anaconda3\\envs\\QCBClass\\lib\\site-packages\\smac\\runner\\target_function_runner.py\", line 257, in __call__\n    return algorithm(config, **algorithm_kwargs)\n  File \"aBFinalplotsSMAC2.py\", line 386, in train\n    bi, pi, t = AlamarblueMechanics(experimental_data, updated_parameters, \"Hypertuning\")\n  File \"aBFinalplotsSMAC2.py\", line 88, in AlamarblueMechanics\n    K3_M = var[5]\nIndexError: list index out of range\n",
+        "error": "IndexError('list index out of range')"
+      }
+    ],
+    [
+      4,
+      null,
+      398764591,
+      null,
+      Infinity,
+      0.0,
+      2,
+      1700084152.2961385,
+      1700084152.3166423,
+      {
+        "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\danie\\anaconda3\\envs\\QCBClass\\lib\\site-packages\\smac\\runner\\target_function_runner.py\", line 184, in run\n    rval = self(config_copy, target_function, kwargs)\n  File \"C:\\Users\\danie\\anaconda3\\envs\\QCBClass\\lib\\site-packages\\smac\\runner\\target_function_runner.py\", line 257, in __call__\n    return algorithm(config, **algorithm_kwargs)\n  File \"aBFinalplotsSMAC2.py\", line 386, in train\n    bi, pi, t = AlamarblueMechanics(experimental_data, updated_parameters, \"Hypertuning\")\n  File \"aBFinalplotsSMAC2.py\", line 88, in AlamarblueMechanics\n    K3_M = var[5]\nIndexError: list index out of range\n",
+        "error": "IndexError('list index out of range')"
+      }
+    ]
+  ],
+  "configs": {
+    "1": {
+      "K1_M": 214,
+      "K2_M": 3724,
+      "K3_M": 10751,
+      "V1_max": 0.1702092133658007,
+      "V2_max": 1.7228183292029426,
+      "V3_max": 0.9915358106903732
+    },
+    "2": {
+      "K1_M": 514,
+      "K2_M": 644,
+      "K3_M": 98924,
+      "V1_max": 0.6564506904771552,
+      "V2_max": 0.784511600443162,
+      "V3_max": 1.7651180367693304
+    },
+    "3": {
+      "K1_M": 714,
+      "K2_M": 523,
+      "K3_M": 78053,
+      "V1_max": 0.6196127178579391,
+      "V2_max": 1.3639587779078632,
+      "V3_max": 0.2587236690120518
+    },
+    "4": {
+      "K1_M": 573,
+      "K2_M": 2301,
+      "K3_M": 83262,
+      "V1_max": 0.5122968960406915,
+      "V2_max": 1.1372994637884284,
+      "V3_max": 0.8746268756448836
+    }
+  },
+  "config_origins": {
+    "1": "Initial Design: Sobol",
+    "2": "Initial Design: Sobol",
+    "3": "Acquisition Function Maximizer: Random Search (sorted)",
+    "4": "Acquisition Function Maximizer: Random Search (sorted)"
+  }
+}

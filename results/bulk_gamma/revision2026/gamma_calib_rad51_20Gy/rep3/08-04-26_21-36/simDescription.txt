@@ -1,0 +1,4 @@
+Cell Type: rad51
+Rad Type: Gamma
+Sim Dim: 64microns
+NumGen: 15ROS model: Basic ROS

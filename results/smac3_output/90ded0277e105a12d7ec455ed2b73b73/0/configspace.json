@@ -1,0 +1,62 @@
+{
+  "hyperparameters": [
+    {
+      "name": "K1_M",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 1,
+      "upper": 800,
+      "default": 400,
+      "q": null
+    },
+    {
+      "name": "K2_M",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 1,
+      "upper": 6000,
+      "default": 3000,
+      "q": null
+    },
+    {
+      "name": "K3_M",
+      "type": "uniform_int",
+      "log": false,
+      "lower": 1,
+      "upper": 100000,
+      "default": 50000,
+      "q": null
+    },
+    {
+      "name": "V1_max",
+      "type": "uniform_float",
+      "log": false,
+      "lower": 0.001,
+      "upper": 0.8,
+      "default": 0.4005,
+      "q": null
+    },
+    {
+      "name": "V2_max",
+      "type": "uniform_float",
+      "log": false,
+      "lower": 0.001,
+      "upper": 2.0,
+      "default": 1.0005,
+      "q": null
+    },
+    {
+      "name": "V3_max",
+      "type": "uniform_float",
+      "log": false,
+      "lower": 0.001,
+      "upper": 2.0,
+      "default": 1.0005,
+      "q": null
+    }
+  ],
+  "conditions": [],
+  "forbiddens": [],
+  "python_module_version": "0.6.1",
+  "json_format_version": 0.4
+}
