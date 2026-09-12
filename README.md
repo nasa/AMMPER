@@ -1,120 +1,234 @@
-# AMMPER-2 — organized source tree (August 2026)
+# AMMPER-2
 
-Agent-Based Model for Microbial Populations Exposed to Radiation, version 2.
-This branch (`organized_AMMPER_2_August_2026`) is a **reorganization of
-`updated_figures`**: the same code and data, arranged so that the manuscript
-figures can be regenerated from a known entry point, and so that the simulation
-engine, the analysis scripts, the input data, and the simulation outputs are no
-longer interleaved in a single flat directory.
+**Agent-Based Model for Microbial Populations Exposed to Radiation**
 
-No scientific behavior was changed in the reorganization commits. The figure
-scripts reproduce their previous output (verified by re-running them and
-comparing the rendered panels). Bug fixes live in **separate, later commits** so
-they can be reviewed independently of the file moves — see `docs/BUGFIXES.md`.
+AMMPER-2 is a research simulation for studying how ionizing radiation affects
+microbial populations. It models cell growth, direct radiation damage, reactive
+oxygen species (ROS), and DNA repair on a three-dimensional lattice. The model
+supports wild-type and `rad51` yeast phenotypes, proton and gamma exposures,
+ground-test and deep-space environments, and both basic static and
+diffusion-and-decay ROS treatments.
 
-## Layout
+The repository contains the simulation engine, command-line and graphical
+interfaces, bundled RITRACKS radiation-track inputs, experimental data,
+analysis code, and scripts used to reproduce manuscript figures. AMMPER is
+research software and is not intended for clinical or operational radiation
+risk decisions.
 
+## Repository contents
+
+| Path | Contents |
+| --- | --- |
+| `src/` | Simulation entry points and the `ammper` model modules |
+| `gui/` | PyQt5 graphical interface and GUI assets |
+| `data/` | Experimental data, fluence tables, and radiation-track inputs |
+| `analysis/` | Growth-curve, alamarBlue, ROS, gamma, and statistical analyses |
+| `results/` | Archived simulation results and figure source assets |
+| `figures/` | Generated publication figures |
+| `revisions_2026/` | Manuscript-revision code, figures, and source files |
+| `ammper_paths.py` | Repository-relative path helpers |
+
+## Installation
+
+AMMPER's supplied environment targets Python 3.10. The versions in
+`requirements.txt` are used for the main simulation and GUI.
+> continue to next section for Apple Silicon Mac install
+
+1. Clone the repository and enter it:
+
+   ```bash
+   git clone https://github.com/nasa/AMMPER.git
+   cd AMMPER
+   ```
+
+2. Create and activate a virtual environment:
+
+   ```bash
+   python3.10 -m venv .venv
+   source .venv/bin/activate
+   ```
+
+   On Windows PowerShell:
+
+   ```powershell
+   .venv\Scripts\Activate.ps1
+   ```
+
+3. Install the dependencies:
+
+   ```bash
+   python -m pip install --upgrade pip
+   python -m pip install -r requirements.txt
+   ```
+
+Run commands from the repository root. Scripts use `ammper_paths.py` to find
+bundled inputs and output directories independent of the clone location.
+
+### Apple Silicon Macs:
+
+If you are installing on an Apple Silicon Mac, **`pip install -r requirements.txt` will fail or hang indefinitely while installing `PyQt5==5.15.9`**. This is due to the `PyQt5-Qt5` binary dependency does not incldue a native `arm64` wheel on PyPI, forcing `pip` to compile it from source. This hangs on a license prompt that `pip` hides from the terminal. 
+
+A fix is to use **Conda-Forge** to install a pre-compiled, native `arm64` binary of PyQt5, and use `pip` only for the remaining pure-Python dependencies.
+
+1. **Install Miniconda** (if you do not already have it):
+
+```bash 
+brew install --cask miniconda 
+
+conda init zsh
 ```
-src/                        simulation
-  AMMPER.py                   interactive entry point
-  AMMPERCLI.py                command-line entry point
-  AMMPERBulk_aB.py            batch runner used for the alamarBlue proton runs
-  AMMPERBulk_GAMMAfinal.py    batch runner for the exploratory gamma runs
-  AMMPERruns_aB.py            driver that loops AMMPERBulk_aB over doses
-  AMMPERruns_GAMMAFINAL.py    driver for the gamma runs
-  ammper/                     the model itself (imported by the above)
-    cellDefinition.py           the Cell agent
-    genTraverse_groundTesting.py  proton tracks, ground-test environments
-    genTraverse_deepSpace.py      proton tracks, deep-space environment
-    genROS.py                     ROS with diffusion and decay ("complex")
-    genROSOld.py                  ROS static and eternal ("naive")
-    genROSDiffusion.py            standalone diffusion experiments
-    cellPlot.py                   per-generation visualization
-    cellPlot_deepSpace.py         per-generation visualization, deep space
-    GammaRadGen.py                exploratory gamma event generation
+Close and reopen your terminal after this step so the Conda configuration loads.
 
-analysis/                   everything downstream of a simulation
-  aB/                         alamarBlue kinetics model and figures
-    ab_final_plots_panel.py       >>> MAIN TEXT FIGURE 2 (per-dose panels)
-    stack_ab_figures.py           >>> MAIN TEXT FIGURE 2 (assembles the stack)
-    aBFinalplotsSMAC.py           SMAC3 Bayesian Optimization parameter fit
-    aBFinalplotsSMAC2.py          SMAC3 variant
-    aBFinalplots.py               earlier single-figure version
-    aBFinalplotsCombinedAnalysis.py  combined proton + gamma analysis
-    aBFinalPlotsMaddie.py         collaborator variant
-    AlamarBlueToy16Grid.py        manual Grid Search parameter fit
-    AlamarBlueToy17_Statistical.py  statistical version of the toy model
-    erroranalysis.py              Grid Search vs BO error comparison
-  growth_curves/
-    generate_growth_curves.py     growth curves from simulation output
-    stack_growth_curves.py        >>> MAIN TEXT FIGURE 1 (assembles the panel)
-  ros/ROSDiffusionLifetime.py   ROS half-life / diffusion analysis
-  gamma/                        exploratory gamma analysis
-  stats/STATS_PAPER.R           CLMM, Kruskal-Wallis, Wilcoxon (R 4.3.1)
-  moreplots.py                  assorted supporting plots
+2. **Use the free Conda-Forge channel.** By default, Conda uses Anaconda's commercial repository, which enforces strict rate limits. Run this once to permanently switch to the free, unrestricted community channel:
 
-gui/                        graphical interface (PySide/Qt) and its assets
-data/
-  experimental/               plate-reader and BioSentinel source data
-    alamarblue/                 proton aB CSVs (mean and STD per dose)
-    alamarblue_gamma/           gamma aB data
-    biosentinel/                BioSentinel/LEIA spreadsheets
-  radiation_input/ritracks/   RITRACKS track data, keyed by proton energy
-  fluence/                    deep-space and GCRSim fluence tables
-results/
-  bulk_aB/                    simulation output, proton aB runs (was Results_Bulk_aB)
-  bulk_gamma/                 simulation output, gamma runs
-  single_runs/                individual run output (was Results)
-  smac3_output/               SMAC3 optimizer run history
-  figures_updated_figures_branch/  pre-rendered panel assets used by the compositors
-  paper2024_revision_figures/ figures from the 2024 revision round
-docs/                       notes, media, and BUGFIXES.md
-figures/                    generated output (git-ignored, created on demand)
-ammper_paths.py             path resolution — import this, don't hardcode paths
+```bash 
+echo "channels:" > ~/.condarc
+echo "  - conda-forge" >> ~/.condarc
+echo "channel_priority: strict" >> ~/.condarc
+conda clean --all --yes
 ```
 
-## Running it
+3. **Create a dedicated environment for AMMPER**, forcing Conda-Forge with `--override-channels` :
 
-Requires the packages in `requirements.txt` (numpy, pandas, scipy,
-scikit-learn, matplotlib; `smac` only for the SMAC3 fitting scripts).
+```bash 
+conda create --name ammper python=3.10 -y --override-channels -c conda-forge
+conda activate ammper
+```
 
-Scripts resolve their own paths relative to the repository, so they can be
-launched from anywhere:
+4. **Install PyQt5 as a pre-compiled binary from Conda-Forge:**
 
 ```bash
-# one simulation: radType cellType ROSType dose outputFolder
-#   radType  a=150 MeV Proton  b=GCRSim  c=Deep Space  d=Gamma
-#   cellType a=wild type       b=rad51
-#   ROSType  a=Basic (naive)   b=Complex (diffusion+decay)
-python3 src/AMMPERBulk_aB.py a a a 2.5 WT_Basic_25
-
-# main text Figure 1
-python3 analysis/growth_curves/stack_growth_curves.py
-
-# main text Figure 2 (per-dose panels first, then the stack)
-python3 analysis/aB/ab_final_plots_panel.py
-python3 analysis/aB/stack_ab_figures.py
+conda install pyqt=5.15.9 -y --override-channels -c conda-forge
 ```
 
-Output lands in `figures/`. Simulation output lands in `results/bulk_aB/<name>/`.
+5. **Install the remaining dependencies with `pip`**, skipping the `PyQt5` line since Conda is now managing it:
 
-Note that `src/AMMPERBulk_aB.py` expects the single-letter argument codes above,
-not the expanded strings — passing `"150 MeV Proton"` fails with a `NameError`
-on `N`, because the argument branches only match the letters. This is
-pre-existing upstream behavior and was left as is.
-
-## Paths
-
-Use `ammper_paths` rather than literal relative paths:
-
-```python
-import ammper_paths as P
-df = pd.read_csv(P.ab_experimental("AlamarblueRawdataWTKGy.csv"))
-sim = P.bulk_aB("WT_Basic_0")
-out = P.figures("my_panel.png")   # creates figures/ if needed
+```bash
+pip install -r <(grep -v "PyQt5" requirements.txt)
 ```
 
-The old-to-new mapping is documented at the top of `ammper_paths.py`. Several
-Windows absolute paths (`C:\Users\danie\...`) remain in the older analysis
-scripts; they were already dead before the reorganization and are left
-untouched so those scripts stay comparable with their published versions.
+6. **Verify the installation:**
+
+```bash
+python -c "import PyQt5; print('PyQt5 successfully imported!')"
+```
+
+> **Note:** Once this Conda environment is set up, use `conda activate ammper` instead of `source .venv/bin/activate` for all future work on this repository.
+ If you = use `pyenv`, it can silently override Conda's Python run `which python` to confirm it resolves inside the `ammper` environment.
+
+### Dependencies
+
+| Dependency | Version | Purpose |
+| Matplotlib | 3.7.2 | Plotting and figure generation |
+| --- | ---: | --- |
+| MoviePy | 1.0.3 | GUI video generation | 
+| NumPy | 1.25.2 | Arrays and numerical simulation |
+| pandas | 2.1.0 | Experimental and simulation data handling |
+| PyQt5 | 5.15.9 | Graphical interface |
+| scikit-learn | 1.3.0 | Data splitting and analysis utilities |
+| SciPy | 1.11.2 | Scientific calculations and ROS distributions |
+
+FFmpeg is also needed to export videos through MoviePy. Some specialist or
+legacy analysis scripts have dependencies not installed by
+`requirements.txt`, including SMAC/ConfigSpace, OpenPyXL, statsmodels,
+pingouin, COBRApy, and R packages. Inspect the imports in the particular script
+before running it. The core simulation and figure commands below use the pinned
+requirements.
+
+## Usage
+
+### Interactive command-line simulation
+
+Start the prompt-driven interface:
+
+```bash
+python src/AMMPERCLI.py
+```
+
+The program asks for the radiation environment, dose where applicable, cell
+type, and ROS model. Interactive runs write their description, cell-state
+data, and plots beneath a timestamped `Results/` directory.
+
+### Scripted simulation
+
+For a non-interactive proton run:
+
+```bash
+python src/AMMPERBulk_aB.py a a a 2.5 WT_Basic_25
+```
+
+The five positional arguments are:
+
+1. radiation: `a` = 150 MeV proton, `b` = GCRSim, `c` = deep space,
+   `d` = gamma;
+2. cell type: `a` = wild type, `b` = `rad51`;
+3. ROS model: `a` = basic, `b` = diffusion and decay;
+4. dose in Gy (proton mode supports `0`, `2.5`, `5`, `10`, `20`,
+   and `30`); and
+5. output-group name.
+
+This example writes timestamped output under
+`results/bulk_aB/WT_Basic_25/`. The bulk runner intentionally waits 61 seconds
+at the end to prevent timestamp collisions. Pass the single-letter codes shown
+above; expanded names are not accepted.
+
+
+### Graphical interface
+
+```bash
+python gui/AMMPERGUI.py
+```
+
+A desktop session is required. Video export also requires FFmpeg on the system
+path.
+
+### Reproduce the main figure panels
+
+The repository includes the required archived output and panel assets:
+
+```bash
+python analysis/growth_curves/stack_growth_curves.py
+python analysis/aB/ab_final_plots_panel.py
+python analysis/aB/stack_ab_figures.py
+```
+
+Generated PDF, PNG, and SVG files are written to `figures/`. The manuscript
+and revision-specific reproduction scripts are in `revisions_2026/`; those
+scripts may require the optional dependencies noted above.
+
+## Contributing
+
+Contributions that improve correctness, reproducibility, documentation, or
+usability are welcome.
+
+1. Open an issue describing the bug or proposed change. For model changes,
+   explain the scientific rationale and expected effect on results.
+2. Fork the repository, create a focused branch, and keep unrelated changes in
+   separate commits.
+3. Use four-space indentation, descriptive names, docstrings for reusable
+   functions, and repository-relative paths through `ammper_paths.py`. Do not
+   introduce machine-specific absolute paths.
+4. Update documentation and dependency declarations when setup or behavior
+   changes. Do not commit local environments, caches, or newly generated bulk
+   results unless they are required reference data.
+5. Submit a pull request summarizing the change and validation commands.
+   Identify altered numerical output or regenerated figures, and include
+   before-and-after output when scientific results change.
+
+## License
+This software is released under the **NASA Open Source Agreement (NOSA) Version 1.3**. Reference Number ARC-18739-1
+
+A copy of the full license text should be included in the `LICENSE` file of this repository. You can also view the official terms online at the [Open Source Initiative (OSI)](https://opensource.org). 
+
+## Contact
+
+For scientific or project questions, contact the manuscript's corresponding
+author, **Jessica Lee**, at **jessica.a.lee@nasa.gov**.
+
+Additional project contacts:
+- **Daniel Palacios** — [Daniel.Palacios@bcm.edu](mailto:Daniel.Palacios@bcm.edu)
+- **Pramesh Sharma** — [prameshsharma25@gmail.com](mailto:prameshsharma25@gmail.com)
+
+For bug reports, feature requests, and contribution proposals, use the
+[GitHub issue tracker](https://github.com/nasa/AMMPER/issues) so discussion and
+resolution remain visible to the project team.
