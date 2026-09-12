@@ -20,7 +20,7 @@ from PyQt5.QtWidgets import QApplication, QWidget
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt
 from vgui_form import Ui_Widget # AMMPER interface 
-from movieMaker import movie_maker as mm
+from gui.movieMaker import movie_maker as mm
 
 # AMMPER modules
 import numpy as np
@@ -777,10 +777,11 @@ class Widget(QWidget):
         self.stackedWidget.setCurrentIndex(5)
         self.ui.label_35.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.ui.label_35.setScaledContents(True)
-        self.ui.label_35.setScaledContents(True)
-        mm.movieMaker("Results/", self.path1, self.path2, self.path3, self.path4, self.path5, self.path6, self.path7, self.path8, self.path9, self.path10, self.path11, self.path12, self.path13, self.path14, self.path15)
-        videopath = QPixmap("Results/visualization.mp4")
-        self.ui.label_35.setPixmap(videopath)
+        # Fix: Pass empty string to use already-correct paths
+        mm("", self.path1, self.path2, self.path3, self.path4, self.path5, self.path6, self.path7, self.path8, self.path9, self.path10, self.path11, self.path12, self.path13, self.path14, self.path15)
+        # Fix: Open in OS default player, show first plot as placeholder
+        subprocess.call(["open", "visualization.mp4"])
+        self.ui.label_35.setPixmap(QPixmap(self.path1))
        
 
 # Widget initialization. 
