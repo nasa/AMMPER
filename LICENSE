@@ -1,0 +1,30 @@
+NASA OPEN SOURCE AGREEMENT VERSION 1.3
+THIS OPEN SOURCE AGREEMENT ("AGREEMENT") DEFINES THE TERMS AND CONDITIONS FOR USING, REPRODUCING, DISTRIBUTING, MODIFYING, AND REDISTRIBUTING THE SOFTWARE. BY CHOOSING TO USE, REPRODUCE, DISTRIBUTE, MODIFY, OR REDISTRIBUTE THE SOFTWARE, YOU ARE AGREEMENT TO BE BOUND BY THE TERMS AND CONDITIONS OF THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS AND CONDITIONS, YOU NOTIFY NASA OR THE LICENSOR AND DO NOT USE, REPRODUCE, DISTRIBUTE, MODIFY, OR REDISTRIBUTE THE SOFTWARE.
+
+1. DEFINITIONS
+"Ames Research Center" or "ARC" means the NASA Ames Research Center.
+"Government" means the United States Government as represented by the Administrator of the National Aeronautics and Space Administration.
+"Contributor" means any person or entity that creates or contributes to the creation of Modifications.
+"Larger Work" means a work that combines the Subject Software or portions thereof with code not governed by the terms of this Agreement.
+"Modification" means any addition to or deletion from the substance or structure of either the Original Program or any previous Modifications.
+"Original Program" means the original version of the computer software and documentation available under this Agreement.
+"Recipient" means anyone who receives the Subject Software under this Agreement, including All Contributors.
+"Subject Software" means the Original Program, Modifications, or any combination of the Original Program and Modifications.
+
+2. GRANT OF RIGHTS
+A. Subject to the terms and conditions of this Agreement, each Contributor hereby grants to Recipient a non-exclusive, worldwide, royalty-free, copyright license to reproduce, prepare derivative works of, publicly display, publicly perform, distribute, and sublicense the Subject Software.
+B. Subject to the terms and conditions of this Agreement, each Contributor hereby grants to Recipient a non-exclusive, worldwide, royalty-free patent license under Licensed Patents to make, use, sell, offer to sell, import, and otherwise transfer the Subject Software.
+
+3. OBLIGATIONS OF RECIPIENT
+A. Distribution of the Subject Software must include a copy of this Agreement.
+B. Any Modification redistributed must be made available under the terms of this Agreement.
+C. Recipient may not offer or impose any terms on the Subject Software that alter or restrict the applicable version of this Agreement.
+
+4. DISCLAIMER OF WARRANTY
+THE SUBJECT SOFTWARE IS PROVIDED "AS IS" WITHOUT ANY WARRANTY OF ANY KIND, EITHER EXPRESSED, IMPLIED, OR STATUTORY, INCLUDING, BUT NOT LIMITED TO, ANY WARRANTY THAT THE SUBJECT SOFTWARE WILL CONFORM TO SPECIFICATIONS, ANY IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR FREEDOM FROM INFRINGEMENT, ANY WARRANTY THAT THE SUBJECT SOFTWARE WILL BE ERROR FREE, OR ANY WARRANTY THAT DOCUMENTATION, IF PROVIDED, WILL CONFORM TO THE SUBJECT SOFTWARE.
+
+5. LIMITATION OF LIABILITY
+IN NO EVENT SHALL THE UNITED STATES GOVERNMENT, NASA, OR ANY CONTRIBUTOR BE LIABLE FOR ANY DAMAGES, INCLUDING, BUT NOT LIMITED TO, DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL, INCIDENTAL, OR PUNITIVE DAMAGES, HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE THE SUBJECT SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+6. INDEMNIFICATION
+Recipient shall indemnify and hold harmless the United States Government, NASA, and all Contributors from and against any and all liabilities, losses, damages, claims, and expenses arising out of Recipient's use, modification, or distribution of the Subject Software.
