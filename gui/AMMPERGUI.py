@@ -16,10 +16,10 @@ from time import sleep
 import subprocess
 import random
 
-from PyQt5.QtWidgets import QApplication, QWidget
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtCore import Qt
-from vgui_form import Ui_Widget # AMMPER interface 
+from PyQt5.QtWidgets import QApplication, QWidget, QMessageBox
+from PyQt5.QtGui import QPixmap, QDesktopServices
+from PyQt5.QtCore import Qt, QUrl
+from gui.vgui_form import Ui_Widget  # AMMPER interface
 from gui.movieMaker import movie_maker as mm
 
 # AMMPER modules
@@ -774,15 +774,26 @@ class Widget(QWidget):
         self.ui.label_13.setScaledContents(True)
 
     def visualization(self):
+        """Export the generation frames and open the video in the desktop player."""
+        frames = [getattr(self, f"path{index}") for index in range(1, 16)]
+        try:
+            movie_path = mm("", *frames)
+        except Exception as error:
+            QMessageBox.warning(self, "Visualization export failed", str(error))
+            return
+
         self.stackedWidget.setCurrentIndex(5)
         self.ui.label_35.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.ui.label_35.setScaledContents(True)
-        # Fix: Pass empty string to use already-correct paths
-        mm("", self.path1, self.path2, self.path3, self.path4, self.path5, self.path6, self.path7, self.path8, self.path9, self.path10, self.path11, self.path12, self.path13, self.path14, self.path15)
-        # Fix: Open in OS default player, show first plot as placeholder
-        subprocess.call(["open", "visualization.mp4"])
         self.ui.label_35.setPixmap(QPixmap(self.path1))
-       
+        if not QDesktopServices.openUrl(QUrl.fromLocalFile(movie_path)):
+            QMessageBox.warning(
+                self,
+                "Unable to open visualization",
+                "The video was saved, but no desktop player could be opened.\n"
+                f"Open this file manually:\n{movie_path}",
+            )
+
 
 # Widget initialization. 
 

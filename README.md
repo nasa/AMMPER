@@ -180,7 +180,19 @@ python gui/AMMPERGUI.py
 ```
 
 A desktop session is required. Video export also requires FFmpeg on the system
-path.
+path. The visualization is saved as `visualization.mp4` in the current
+working directory and opened with the desktop's default video player. If no
+player is available, the GUI reports the saved file path for manual opening.
+
+To run the visualization regression tests without a display:
+
+```bash
+python -m pip install pytest
+QT_QPA_PLATFORM=offscreen OPENBLAS_NUM_THREADS=1 python -m pytest tests/test_visualization.py
+```
+
+The tests use small generated images and do not run the scientific simulation.
+On Windows, set these environment variables before invoking pytest.
 
 ### Reproduce the main figure panels
 
