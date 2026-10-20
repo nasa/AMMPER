@@ -366,3 +366,15 @@ def test_data_verify_reports_missing_folders(monkeypatch, capsys):
     assert exit_code == 1
     assert "1 of 2" in captured.out
     assert "20" in captured.out
+
+
+def test_output_survives_a_windows_code_page(monkeypatch):
+    """A cp1252 pipe (as on Windows CI) must not crash on the check mark printed after a run."""
+    import io
+
+    stream = io.TextIOWrapper(io.BytesIO(), encoding="cp1252")
+    monkeypatch.setattr("sys.stdout", stream)
+    cli._use_utf8_output()
+    cli._console().print("[bold green][\u2714] Quickstart complete[/bold green]")
+    stream.flush()
+    assert "\u2714".encode("utf-8") in stream.buffer.getvalue()

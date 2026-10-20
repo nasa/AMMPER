@@ -47,6 +47,17 @@ def _console():
     return Console()
 
 
+def _use_utf8_output():
+    for stream in (sys.stdout, sys.stderr):
+        encoding = (getattr(stream, "encoding", None) or "").lower().replace("-", "")
+        if encoding == "utf8" or not hasattr(stream, "reconfigure"):
+            continue
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (OSError, ValueError):
+            pass
+
+
 def _print_banner(console):
     try:
         version = importlib.metadata.version("ammper")
@@ -606,6 +617,7 @@ def _interactive_menu(parser, console):
 
 
 def main(argv=None):
+    _use_utf8_output()
     parser = build_parser()
     args = parser.parse_args(argv)
 
